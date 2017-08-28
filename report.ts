@@ -1,4 +1,4 @@
-export default function report(event, data) {
+export default function report(event: string, data: any) {
   switch (event) {
     case 'ERROR':
       console.log(`[${event}] ${data.type}: ${data.details}`)

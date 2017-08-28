@@ -22,7 +22,7 @@ class World {
     Object.assign(this, ...template)
     this.key = Symbol('world:' + this.slug)
   }
-  tick() {
+  tick(): void {
     this.time += this._tickDelta
     this.entities.forEach(e => {
       e.modifiers.forEach(m => {
@@ -30,28 +30,20 @@ class World {
       })
     })
   }
-  spawn(e) {
-    if (e instanceof Entity) {
-      this.entities.push(e)
-      e.onSpawn.forEach(h => h(e))
-      report('ENTITY_SPAWNED', { entity: e })
-      return
-    }
-    report('ERROR', { type: 'unable to spawn object', details: 'not recognized as an entity' })
+  spawn(e: Entity): void {
+    this.entities.push(e)
+    e.onSpawn.forEach(h => h(e))
+    report('ENTITY_SPAWNED', { entity: e })
   }
-  despawn(e) {
-    if (e instanceof Entity) {
-      let i = this.entities.indexOf(e)
-      if (i < 0) {
-        report('ERROR', { type: 'unable to despawn object', details: 'not in the world' })
-        return
-      }
-      this.entities.splice(i)
-      e.onDespawn.forEach(h => h(e))
-      report('ENTITY_DESPAWNED', { entity: e })
+  despawn(e: Entity): void {
+    let i = this.entities.indexOf(e)
+    if (i < 0) {
+      report('ERROR', { type: 'unable to despawn object', details: 'not in the world' })
       return
     }
-    report('ERROR', { type: 'unable to despawn object', details: 'not recognized as an entity' })
+    this.entities.splice(i)
+    e.onDespawn.forEach(h => h(e))
+    report('ENTITY_DESPAWNED', { entity: e })
   }
 }
 
