@@ -123,7 +123,7 @@ class Entity {
         report('ERROR', { type: 'NYI', details: `dealDamage handling not yet implemented for type ${args.type}` })
         return
     }
-    args.target.takeDamage(args)
+    //args.target.takeDamage(args)
   }
   takeDamage(args) {
     report('ERROR', { type: 'NYI', details: `takeDamage handling not yet implemented for type ${args.type}` })

@@ -1,4 +1,24 @@
+import Entity from './Entity'
+
+interface ILearnFunc {
+  (e: Entity): void
+}
+interface ICastFunc {
+  (e: Entity, ...targets: Entity[]): void
+}
 class Ability {
+  id: number
+  slug: string
+  cooldown: number
+  triggersGCD: boolean
+  onGCD: boolean
+  charges: number
+  host: Entity
+  onLearn: ILearnFunc[]
+  onUnlearn: ILearnFunc[]
+  onCast: ICastFunc[]
+
+  key: Symbol
   constructor(...template) {
     this.id = 0
     this.slug = ''
@@ -9,22 +29,18 @@ class Ability {
     this.host = undefined
     this.onLearn = []
     this.onUnlearn = []
-    this.onSpawn = []
-    this.onDespawn = []
     this.onCast = []
 
-    this.castability = []
+    //this.castability = []
 
     Object.assign(this, ...template)
     this.onLearn = this.onLearn.map(x => x.bind(this))
     this.onUnlearn = this.onUnlearn.map(x => x.bind(this))
-    this.onSpawn = this.onSpawn.map(x => x.bind(this))
-    this.onDespawn = this.onDespawn.map(x => x.bind(this))
     this.onCast = this.onCast.map(x => x.bind(this))
     this.key = Symbol('ability:' + this.slug)
   }
   triggerCooldown(e) {
-    e[this.key].cooldown = this.cooldown
+    //e[this.key].cooldown = this.cooldown
   }
   learn(e) {
     this.host = e

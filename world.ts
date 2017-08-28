@@ -3,7 +3,16 @@ import Entity from './entity'
 import report from './report'
 
 class World {
+  _second: number
+  _tickDelta: number
+
+  time: number
+  entities: Entity[]
+  key: Symbol
+  slug: string
+
   constructor(...template) {
+    this.slug = ''
     this._second = 1000
     this._tickDelta = 50
 
@@ -17,7 +26,7 @@ class World {
     this.time += this._tickDelta
     this.entities.forEach(e => {
       e.modifiers.forEach(m => {
-        m.onTick()
+        m.tick(this)
       })
     })
   }
