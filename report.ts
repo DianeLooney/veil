@@ -1,7 +1,7 @@
 export default function report(event: string, data: any) {
   switch (event) {
     case 'ERROR':
-      console.log(`[${event}] ${data.type}: ${data.details}`)
+      //console.log(`[${event}] ${data.type}: ${data.details}`)
       break
 
     case 'ABILITY_LEARNED':
@@ -27,7 +27,16 @@ export default function report(event: string, data: any) {
     case 'ENTITY_DESPAWNED':
       console.log(`[${event}] ${data.entity.slug}`)
       break
-
+    case 'DAMAGE_TAKEN':
+      console.log(
+        `[${event}] ${data.source.slug} -> ${data.target.slug} - ${data.amount}`
+      )
+      break
+    case 'ENTITY_DIED':
+      console.log(
+        `[${event}] ${data.killingBlow.slug} x ${data.unit
+          .slug} - ${data.amount}`
+      )
     default:
       //console.log(`[${event}] ${JSON.stringify(data)}`)
       break

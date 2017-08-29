@@ -1,57 +1,57 @@
-import Entity from './Entity'
+import { IEntity, DefaultEntity } from './Entity'
 
 interface ILearnFunc {
-  (e: Entity): void
+  (e: IEntity): void
 }
 interface ICastFunc {
-  (e: Entity, ...targets: Entity[]): void
+  (e: IEntity, ...targets: IEntity[]): void
 }
-class Ability {
+interface IAbility {
   id: number
   slug: string
   cooldown: number
   triggersGCD: boolean
   onGCD: boolean
   charges: number
-  host: Entity
+  host: IEntity
   onLearn: ILearnFunc[]
   onUnlearn: ILearnFunc[]
   onCast: ICastFunc[]
-
-  key: Symbol
-  constructor(...template) {
-    this.id = 0
-    this.slug = ''
-    this.cooldown = 0
-    this.triggersGCD = true
-    this.onGCD = true
-    this.charges = 0
-    this.host = undefined
-    this.onLearn = []
-    this.onUnlearn = []
-    this.onCast = []
-
-    //this.castability = []
-
-    Object.assign(this, ...template)
-    this.onLearn = this.onLearn.map(x => x.bind(this))
-    this.onUnlearn = this.onUnlearn.map(x => x.bind(this))
-    this.onCast = this.onCast.map(x => x.bind(this))
-    this.key = Symbol('ability:' + this.slug)
-  }
-  triggerCooldown(e) {
-    //e[this.key].cooldown = this.cooldown
-  }
-  learn(e) {
-    this.host = e
-    this.onLearn.forEach(h => h(e))
-  }
-  unlearn(e) {
-    this.onUnlearn.forEach(h => h(e))
-  }
-  cast(...targets) {
-    targets.forEach(t => this.onCast.forEach(h => h(this.host, t)))
-  }
+  triggerCooldown(e: IEntity)
+  learn(e: IEntity): void
+  unlearn(e: IEntity): void
+  cast(...targets: IEntity[]): void
+}
+const triggerCooldown = function(e: IEntity) {
+  //e[this.key].cooldown = this.cooldown
+}
+const learn = function(e: IEntity): void {
+  this.host = e
+  this.onLearn.forEach(h => h(e))
+}
+const unlearn = function(e: IEntity): void {
+  this.onUnlearn.forEach(h => h(e))
+}
+const cast = function(...targets: IEntity[]): void {
+  targets.forEach(t => this.onCast.forEach(h => h(this.host, t)))
 }
 
-export default Ability
+const DefaultAbility = {
+  id: 0,
+  slug: '',
+  cooldown: 0,
+  triggersGCD: true,
+  onGCD: true,
+  charges: 0,
+  host: undefined,
+  onLearn: [],
+  onUnlearn: [],
+  onCast: [],
+  triggerCooldown,
+  learn,
+  unlearn,
+  cast
+}
+
+export { IAbility }
+export { DefaultAbility }

@@ -1,14 +1,18 @@
-import Entity from './entity'
+import { IEntity, DefaultEntity } from './entity'
 import World from './world.js'
-import Ability from './ability.js'
-import Modifier from './modifier'
+import { IAbility } from './ability.js'
+import { IModifier } from './modifier'
+import { IActor } from './actor'
 import dhVengeance from './templates/dh/vengeance'
+import { IActorSpammy, SpammyTemplate } from './templates/actors/spammy'
 
 const w = new World()
-const e = new Entity(dhVengeance, { slug: 'test-entity' })
-const a = new Ability({ slug: 'test-ability' })
-const m = new Modifier({ slug: 'test-modifier' })
+const e = Object.create(dhVengeance)
+const a = Object.create(SpammyTemplate) as IActorSpammy
+a.attach(e, 'shear')
+Object.assign(e, { slug: 'test-demon-hunter' })
 
 w.spawn(e)
+e.castAbility('shear', e)
 e.castAbility('shear', e)
 w.despawn(e)

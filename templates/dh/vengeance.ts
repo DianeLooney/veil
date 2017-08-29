@@ -1,8 +1,8 @@
-import Entity from '../../Entity'
-import Ability from '../../Ability.js'
-import Modifier from '../../Modifier.js'
+import { IEntity } from '../../Entity'
+import { IAbility, DefaultAbility } from '../../Ability.js'
+import { IModifier } from '../../Modifier.js'
 
-const shear = new Ability({
+const shear = Object.assign(Object.create(DefaultAbility), {
   id: 203782,
   slug: 'shear',
   onCast: [
@@ -11,7 +11,7 @@ const shear = new Ability({
         type: 'WEAPON_NORMALIZED',
         target: t,
         ability: shear,
-        amount: 3.40
+        amount: 3.4
       })
       e.gainPower('Pain', 100)
     }
@@ -20,7 +20,7 @@ const shear = new Ability({
 
 const vengeance = {
   onSpawn: [
-    e => {
+    (e: IEntity) => {
       e.learnPower('Pain', 0, 1000)
       e.learnAbility(shear)
     }

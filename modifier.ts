@@ -1,53 +1,51 @@
-import Entity from './Entity'
+import { IEntity } from './Entity'
+import World from './World'
 
 interface IApplyFunc {
-  (e: Entity): void
+  (e: IEntity): void
 }
 interface IDropFunc {
-  (e: Entity): void
+  (e: IEntity): void
 }
 interface ITickFunc {
-  (e: Entity): void
+  (e: IEntity): void
 }
-
-class Modifier {
+interface IModifier {
   id: number
   slug: string
-  host: Entity
+  host: IEntity
   attributes: { [key: string]: number }
   onApply: IApplyFunc[]
   onDrop: IDropFunc[]
   onTick: ITickFunc[]
   expires: number
-  key: Symbol
-
-  constructor(...template) {
-    this.id = 0
-    this.slug = ''
-    this.expires = 0
-    this.host = undefined
-    this.attributes = {}
-    this.onApply = []
-    this.onDrop = []
-    this.onTick = []
-
-    Object.assign(this, ...template)
-    this.key = Symbol('modifier:' + this.slug)
-  }
-  apply(e) {
+  apply(e: IEntity): void
+  drop(e: IEntity): void
+  tick(w: World): void
+}
+const DefaultModifier: IModifier = {
+  id: 0,
+  slug: '',
+  host: undefined,
+  attributes: {},
+  onApply: [],
+  onDrop: [],
+  onTick: [],
+  expires: 0,
+  apply(e: IEntity): void {
     this.host = e
     for (var a in this.attributes) {
-      e.attributes[a] += this.attributes[a]
+      e._attributes[a] += this.attributes[a]
     }
     this.onApply.forEach(h => h(e))
-  }
-  drop(e) {
+  },
+  drop(e: IEntity): void {
     for (var a in this.attributes) {
-      e.attributes[a] -= this.attributes[a]
+      e._attributes[a] -= this.attributes[a]
     }
     this.onDrop.forEach(h => h(e))
-  }
-  tick(w) {
+  },
+  tick(w: World): void {
     if (this.expires <= w.time) {
       this.drop(this.host)
     }
@@ -55,4 +53,5 @@ class Modifier {
   }
 }
 
-export default Modifier
+export { IModifier }
+export { DefaultModifier }

@@ -1,5 +1,6 @@
-import Ability from './ability'
-import Entity from './entity'
+import { IAbility } from './ability'
+import { IEntity } from './entity'
+import { IActor } from './actor'
 import report from './report'
 
 class World {
@@ -7,7 +8,8 @@ class World {
   _tickDelta: number
 
   time: number
-  entities: Entity[]
+  entities: IEntity[]
+  actors: IActor[]
   key: Symbol
   slug: string
 
@@ -18,6 +20,7 @@ class World {
 
     this.time = 0
     this.entities = []
+    this.actors = []
 
     Object.assign(this, ...template)
     this.key = Symbol('world:' + this.slug)
@@ -29,16 +32,31 @@ class World {
         m.tick(this)
       })
     })
+    this.actors.forEach(a => {
+      a.act(this)
+    })
   }
-  spawn(e: Entity): void {
+  attachActor(a: IActor): void {
+    this.actors.push(a)
+  }
+  detachActor(a: IActor): void {
+    let i: number = this.actors.indexOf(a)
+    if (i >= 0) {
+      this.actors.splice(i)
+    }
+  }
+  spawn(e: IEntity): void {
     this.entities.push(e)
     e.onSpawn.forEach(h => h(e))
     report('ENTITY_SPAWNED', { entity: e })
   }
-  despawn(e: Entity): void {
+  despawn(e: IEntity): void {
     let i = this.entities.indexOf(e)
     if (i < 0) {
-      report('ERROR', { type: 'unable to despawn object', details: 'not in the world' })
+      report('ERROR', {
+        type: 'unable to despawn object',
+        details: 'not in the world'
+      })
       return
     }
     this.entities.splice(i)
