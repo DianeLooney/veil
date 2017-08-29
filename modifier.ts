@@ -35,13 +35,31 @@ const DefaultModifier: IModifier = {
   apply(e: IEntity): void {
     this.host = e
     for (var a in this.attributes) {
-      e._attributes[a] += this.attributes[a]
+      switch (a.charAt[0]) {
+        case '+':
+          e.attributes[a] += this.attributes[a]
+          break
+        case '*':
+          e.attributes[a] *= this.attributes[a]
+          break
+        default:
+        // TODO: Error reporting
+      }
     }
     this.onApply.forEach(h => h(e))
   },
   drop(e: IEntity): void {
     for (var a in this.attributes) {
-      e._attributes[a] -= this.attributes[a]
+      switch (a.charAt[0]) {
+        case '+':
+          e.attributes[a] -= this.attributes[a]
+          break
+        case '*':
+          e.attributes[a] /= this.attributes[a]
+          break
+        default:
+        // TODO: Error reporting
+      }
     }
     this.onDrop.forEach(h => h(e))
   },

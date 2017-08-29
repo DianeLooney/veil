@@ -15,15 +15,21 @@ interface DamageEvent {
   type: string
   amount: number
 }
+interface IHookFunc {
+  (x: any): void
+}
 interface IEntity {
   id: number
   slug: string
   name: string
+  level: number
   health: number
   alive: boolean
   _healthMax: number
   powers: { [key: string]: IResource }
+  attributes: { [key: string]: number }
   _attributes: { [key: string]: number }
+  _hooks: { [key: string]: IHookFunc[] }
 
   abilities: { [key: string]: IAbility }
   modifiers: IModifier[]
@@ -189,15 +195,71 @@ const castAbility = function(slug: string, ...targets: IEntity[]): void {
   }
 }
 
+const attachDefaultAttributes = function(e: IEntity) {
+  interface getter {
+    (): number
+  }
+  interface setter {
+    (value: any): void
+  }
+  const passthrough = function(x: string): getter {
+    return function() {
+      return e._attributes[x]
+    }
+  }
+  const invalidationFunc = function(k: string, values: string[]): setter {
+    return function(value: number) {
+      e._attributes[k] = value
+      values.forEach(x => {
+        e._attributes[x] = undefined
+      })
+    }
+  }
+  const basicProp = function(
+    def: number,
+    name: string,
+    dependencies: string[]
+  ): void {
+    Object.defineProperty(e.attributes, name, {
+      get: passthrough(name),
+      set: invalidationFunc(name, dependencies)
+    })
+    e.attributes[name] = def
+  }
+  basicProp(0, '+stam', [])
+  basicProp(0, '+stam%', [])
+  basicProp(0, '+armor', [])
+  basicProp(0, '+armor%', [])
+  basicProp(0, '+espertiseRating', [])
+  basicProp(0, '+expertise', [])
+  basicProp(0, '+attackerCritChance', [])
+  basicProp(1, '*drAll', [])
+  basicProp(1, '*drPhysical', [])
+  basicProp(1, '*drMagical', [])
+  basicProp(0, '+maxHealth%', [])
+  basicProp(1, '*maxHealth', [])
+
+  //TODO: computed props
+}
 const DefaultEntity: IEntity = {
   id: 0,
   slug: '',
   name: '',
+  level: 1,
   health: 100,
   alive: true,
   _healthMax: 100,
   powers: {},
+  attributes: {},
   _attributes: {},
+  _hooks: {
+    TakingMeleeWhiteDamage: [],
+    TakingMeleeYellowDamage: [],
+    TakingRangedWhiteDamage: [],
+    TakingRangedYellowDamage: [],
+    TakingHarmfulSpell: [],
+    TakingPeriodicDamage: []
+  },
 
   abilities: {},
   modifiers: [],

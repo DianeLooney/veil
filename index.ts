@@ -5,6 +5,7 @@ import { IModifier } from './modifier'
 import { IActor } from './actor'
 import dhVengeance from './templates/dh/vengeance'
 import { IActorSpammy, SpammyTemplate } from './templates/actors/spammy'
+import consts from './consts'
 
 const w = new World()
 const e = Object.create(dhVengeance)
