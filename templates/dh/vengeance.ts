@@ -42,6 +42,22 @@ const leatherSpecialization = Object.assign(Object.create(DefaultPassive), {
     '*stam': 1.05
   }
 })
+const criticalStrikes = Object.assign(Object.create(DefaultPassive), {
+  id: 221351,
+  slug: 'critical-strikes',
+  attributes: {
+    '+crit': 0.05
+  }
+})
+const tempArtifactWorkarounds = Object.assign(Object.create(DefaultPassive), {
+  id: 221351,
+  slug: 'temp-strikes',
+  attributes: {
+    '*stam': (1 + 59 * 0.0075) * 1.1,
+    '*maxHealth': 1.04
+  }
+})
+
 const vengeance = Object.assign(Object.create(DefaultEntity), {
   onSpawn: [
     (e: IEntity) => {
@@ -50,6 +66,8 @@ const vengeance = Object.assign(Object.create(DefaultEntity), {
       e.learnAbility(increasedThreat)
       e.learnAbility(demonicWards)
       e.learnAbility(leatherSpecialization)
+      e.learnAbility(criticalStrikes)
+      e.learnAbility(tempArtifactWorkarounds)
     }
   ]
 })
