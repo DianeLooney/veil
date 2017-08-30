@@ -1,6 +1,8 @@
 import report from './report'
 import { IAbility } from './ability'
 import { IModifier } from './modifier'
+import { IItem } from './item'
+import consts from './consts'
 
 interface IResource {
   current: number
@@ -25,7 +27,24 @@ interface IEntity {
   level: number
   health: number
   alive: boolean
-  _healthMax: number
+  items: {
+    head: IItem
+    neck: IItem
+    shoulders: IItem
+    back: IItem
+    chest: IItem
+    wrists: IItem
+    hands: IItem
+    waist: IItem
+    legs: IItem
+    feet: IItem
+    finger1: IItem
+    finger2: IItem
+    trinket1: IItem
+    trinket2: IItem
+    weaponMH: IItem
+    weaponOH: IItem
+  }
   powers: { [key: string]: IResource }
   attributes: { [key: string]: number }
   _attributes: { [key: string]: number }
@@ -39,7 +58,6 @@ interface IEntity {
 
   _gcdRemaining: number
 
-  maxHealth(): number
   learnAbility(a: IAbility): void
   unlearnAbility(a: IAbility): void
   gainModifier(m: IModifier): void
@@ -56,37 +74,73 @@ interface IEntity {
   takeDamage(args: DamageEvent): void
 
   castAbility(slug: string, ...targets: IEntity[]): void
-}
 
-const maxHealth = function(): number {
-  return (
-    (this._attributes['+maxHealth'] + this._healthMax) *
-    (1 + this._attributes['*maxHealth'])
-  )
+  equipItem(slot: string, i: IItem): void
+  unequipItem(slot: string): void
+}
+const equipItem = function(slot: string, i: IItem): void {
+  if (this.items[slot] !== undefined) {
+    //TODO: some error message
+    return
+  }
+  this.items[slot] = i
+  //TODO: dispatch Item equipped event
+  for (var a in i.stats) {
+    switch (a.charAt(0)) {
+      case '+':
+        this.attributes[a] += i.stats[a]
+        break
+      case '*':
+        this.attributes[a] *= i.stats[a]
+        break
+      default:
+      // TODO: Error reporting
+    }
+  }
+}
+const unequipItem = function(slot: string): void {
+  if (this.items[slot] === undefined) {
+    //TODO: some error message
+    return
+  }
+  let i = this.items[slot]
+  for (var a in i.stats) {
+    switch (a.charAt(0)) {
+      case '+':
+        this.attributes[a] -= i.stats[a]
+        break
+      case '*':
+        this.attributes[a] /= i.stats[a]
+        break
+      default:
+      // TODO: Error reporting
+    }
+  }
+  this.items[slot] = undefined
 }
 const learnAbility = function(a: IAbility): void {
   if (!this.abilities[a.slug]) {
     this.abilities[a.slug] = a
     a.learn(this)
-    report('ABILITY_LEARNED', { IEntity: this, ability: a })
+    report('ABILITY_LEARNED', { entity: this, ability: a })
   }
 }
 const unlearnAbility = function(a: IAbility): void {
   if (this.abilities[a.slug]) {
     this.abilities[a.slug] = undefined
     a.unlearn(this)
-    report('ABILITY_UNLEARNED', { IEntity: this, ability: a })
+    report('ABILITY_UNLEARNED', { entity: this, ability: a })
   }
 }
 const gainModifier = function(m: IModifier): void {
   this.modifiers.push(m)
   m.apply(this)
-  report('MODIFIER_GAINED', { IEntity: this, modifier: m })
+  report('MODIFIER_GAINED', { entity: this, modifier: m })
 }
 const dropModifier = function(m: IModifier): void {
   let i = this.modifiers.indexOf(m)
   this.modifiers.splice(i)
-  report('MODIFIER_DROPPED', { IEntity: this, modifier: m })
+  report('MODIFIER_DROPPED', { entity: this, modifier: m })
 }
 const maxPower = function(type: string): number {
   return (
@@ -104,7 +158,7 @@ const gainPower = function(type: string, amount: number): void {
   }
   this.powers[type].current += x
   report('POWER_GAINED', {
-    IEntity: this,
+    entity: this,
     power: type,
     amount: amount,
     new: this.powers[type].current
@@ -114,7 +168,7 @@ const spendPower = function(type: string, amount: number): void {
   if (this.powers[type].current >= amount) {
     this.powers[type].current -= amount
     report('POWER_SPENT', {
-      IEntity: this,
+      entity: this,
       power: type,
       amount: amount,
       new: this.powers[type].current
@@ -125,11 +179,11 @@ const learnPower = function(type: string, current: number, max: number): void {
   this.powers[type] = { current, max }
   this._attributes[`+maxPower${type}`] = 0
   this._attributes[`*maxPower${type}`] = 0
-  report('POWER_LEARNED', { IEntity: this, power: type })
+  report('POWER_LEARNED', { entity: this, power: type })
 }
 const unleanPower = function(type: string): void {
   this.powers[type] = undefined
-  report('POWER_UNLEARNED', { IEntity: this, power: type })
+  report('POWER_UNLEARNED', { entity: this, power: type })
 }
 const triggerGCD = function(): void {
   this._gcdRemaining = 1.5
@@ -195,51 +249,129 @@ const castAbility = function(slug: string, ...targets: IEntity[]): void {
   }
 }
 
-const attachDefaultAttributes = function(e: IEntity) {
-  interface getter {
-    (): number
-  }
-  interface setter {
-    (value: any): void
-  }
-  const passthrough = function(x: string): getter {
-    return function() {
-      return e._attributes[x]
-    }
-  }
-  const invalidationFunc = function(k: string, values: string[]): setter {
-    return function(value: number) {
-      e._attributes[k] = value
-      values.forEach(x => {
-        e._attributes[x] = undefined
-      })
-    }
-  }
-  const basicProp = function(
-    def: number,
-    name: string,
-    dependencies: string[]
-  ): void {
-    Object.defineProperty(e.attributes, name, {
-      get: passthrough(name),
-      set: invalidationFunc(name, dependencies)
-    })
-    e.attributes[name] = def
-  }
-  basicProp(0, '+stam', [])
-  basicProp(0, '+stam%', [])
-  basicProp(0, '+armor', [])
-  basicProp(0, '+armor%', [])
-  basicProp(0, '+espertiseRating', [])
-  basicProp(0, '+expertise', [])
-  basicProp(0, '+attackerCritChance', [])
-  basicProp(1, '*drAll', [])
-  basicProp(1, '*drPhysical', [])
-  basicProp(1, '*drMagical', [])
-  basicProp(0, '+maxHealth%', [])
-  basicProp(1, '*maxHealth', [])
+interface getter {
+  (): number
+}
+interface entityGetter {
+  (e: IEntity): number
+}
+interface setter {
+  (value: any): void
+}
 
-  //TODO: computed props
+const invalidationFunc = function(
+  e: IEntity,
+  k: string,
+  values: string[]
+): setter {
+  return function(value: number) {
+    e._attributes[k] = value
+    values.forEach(x => {
+      e._attributes[x] = undefined
+    })
+  }
+}
+const basicProp = function(
+  e: IEntity,
+  def: number,
+  name: string,
+  dependencies: string[]
+): void {
+  Object.defineProperty(e.attributes, name, {
+    get: passthrough(e, name),
+    set: invalidationFunc(e, name, dependencies)
+  })
+  e.attributes[name] = def
+}
+
+const passthrough = function(e: IEntity, x: string): getter {
+  return function() {
+    return e._attributes[x]
+  }
+}
+const computedProp = function(
+  e: IEntity,
+  name: string,
+  calcFunc: entityGetter,
+  dependencies: string[]
+) {
+  Object.defineProperty(e.attributes, name, {
+    get: function(): number {
+      if (e._attributes[name] === undefined) {
+        e._attributes[name] = calcFunc(e)
+        dependencies.forEach(x => {
+          e._attributes[x] = undefined
+        })
+      }
+      return e._attributes[name]
+    }
+  })
+}
+const attachDefaultAttributes = function(e: IEntity) {
+  basicProp(e, 0, '+stam', [])
+  basicProp(e, 1, '*stam', [])
+
+  basicProp(e, 0, '+armor', [])
+  basicProp(e, 0, '+armor%', [])
+
+  basicProp(e, 0, '+espertiseRating', [])
+  basicProp(e, 0, '+expertise', [])
+  basicProp(e, 0, '+attackerCritChance', [])
+  basicProp(e, 1, '*drAll', [])
+  basicProp(e, 1, '*drPhysical', [])
+  basicProp(e, 1, '*drMagical', [])
+  basicProp(e, 0, '+maxHealth%', [])
+  basicProp(e, 1, '*maxHealth', [])
+
+  computedProp(
+    e,
+    'stamina',
+    function(e: IEntity): number {
+      //TODO: Fix this Magic Number
+      return (6259 + e.attributes['+stam']) * e.attributes['*stam']
+    },
+    []
+  )
+  computedProp(
+    e,
+    'health-max',
+    function(e: IEntity): number {
+      //TODO: Fix this magic number
+      return (
+        60 *
+        e.attributes['stamina'] *
+        (1 + e.attributes['+maxHealth%']) *
+        e.attributes['*maxHealth']
+      )
+    },
+    []
+  )
+
+  computedProp(
+    e,
+    'armor',
+    function(e: IEntity): number {
+      return e.attributes['+armor'] * (1 + e.attributes['+armor%'])
+    },
+    ['armor_dr']
+  )
+  computedProp(
+    e,
+    'armor_k',
+    function(e: IEntity): number {
+      return consts('armor-k', e.level)
+    },
+    ['armor_dr']
+  )
+  computedProp(
+    e,
+    'armor_dr',
+    function(e: IEntity): number {
+      //mult = 1 / (1 + x / k)
+      return 1 / (1 + e.attributes['armor'] / e.attributes['armor_k'])
+    },
+    []
+  )
 }
 const DefaultEntity: IEntity = {
   id: 0,
@@ -248,7 +380,6 @@ const DefaultEntity: IEntity = {
   level: 1,
   health: 100,
   alive: true,
-  _healthMax: 100,
   powers: {},
   attributes: {},
   _attributes: {},
@@ -260,7 +391,24 @@ const DefaultEntity: IEntity = {
     TakingHarmfulSpell: [],
     TakingPeriodicDamage: []
   },
-
+  items: {
+    head: undefined,
+    neck: undefined,
+    shoulders: undefined,
+    back: undefined,
+    chest: undefined,
+    wrists: undefined,
+    hands: undefined,
+    waist: undefined,
+    legs: undefined,
+    feet: undefined,
+    finger1: undefined,
+    finger2: undefined,
+    trinket1: undefined,
+    trinket2: undefined,
+    weaponMH: undefined,
+    weaponOH: undefined
+  },
   abilities: {},
   modifiers: [],
 
@@ -269,7 +417,6 @@ const DefaultEntity: IEntity = {
 
   _gcdRemaining: 0,
 
-  maxHealth,
   learnAbility,
   unlearnAbility,
   gainModifier,
@@ -284,9 +431,11 @@ const DefaultEntity: IEntity = {
   dealDamage,
   die,
   takeDamage,
-  castAbility
+  castAbility,
+  equipItem,
+  unequipItem
 }
 
 export { IEntity }
 
-export { DefaultEntity }
+export { attachDefaultAttributes, DefaultEntity }

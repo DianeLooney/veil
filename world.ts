@@ -1,5 +1,5 @@
 import { IAbility } from './ability'
-import { IEntity } from './entity'
+import { attachDefaultAttributes, IEntity } from './entity'
 import { IActor } from './actor'
 import report from './report'
 
@@ -47,6 +47,7 @@ class World {
   }
   spawn(e: IEntity): void {
     this.entities.push(e)
+    attachDefaultAttributes(e)
     e.onSpawn.forEach(h => h(e))
     report('ENTITY_SPAWNED', { entity: e })
   }

@@ -1,4 +1,6 @@
 import * as fs from 'fs'
+import rawData from './consts/scaling'
+
 interface dataDump {
   hp_per_stamina: number[]
   spell_scaling: {
@@ -40,7 +42,6 @@ interface dataDump {
   item_socket_cost_per_level: number[]
   armor_mitigation_by_lvl: number[]
 }
-const rawData = require('./consts/scaling.json') as dataDump
 
 export default function(stat: string, lvl?: number): number {
   lvl = lvl | 110

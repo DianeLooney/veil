@@ -1,4 +1,4 @@
-import { IEntity } from '../../Entity'
+import { IEntity, DefaultEntity } from '../../Entity'
 import { IAbility, DefaultAbility, DefaultPassive } from '../../Ability.js'
 import { IModifier } from '../../Modifier.js'
 
@@ -31,19 +31,28 @@ const demonicWards = Object.assign(Object.create(DefaultPassive), {
     '*drAll': 0.8,
     '+attackerCritChance': -0.06,
     '+expertise': 3,
-    '+stam%': 0.55,
+    '*stam': 1.55,
     '+armor%': 0.75
   }
 })
-const vengeance = {
+const leatherSpecialization = Object.assign(Object.create(DefaultPassive), {
+  id: 226359,
+  slug: 'leather-specialization',
+  attributes: {
+    '*stam': 1.05
+  }
+})
+const vengeance = Object.assign(Object.create(DefaultEntity), {
   onSpawn: [
     (e: IEntity) => {
       e.learnPower('Pain', 0, 1000)
       e.learnAbility(shear)
       e.learnAbility(increasedThreat)
+      e.learnAbility(demonicWards)
+      e.learnAbility(leatherSpecialization)
     }
   ]
-}
+})
 
 export default vengeance
 

@@ -60,7 +60,7 @@ const DefaultAbility: IAbility = {
 const passiveLearn = function(e: IEntity): void {
   this.host = e
   for (var a in this.attributes) {
-    switch (a.charAt[0]) {
+    switch (a.charAt(0)) {
       case '+':
         e.attributes[a] += this.attributes[a]
         break

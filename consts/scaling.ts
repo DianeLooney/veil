@@ -1,11 +1,11 @@
-{
-  "hp_per_stamina": [
+export default {
+  hp_per_stamina: [
     0,
     14,
     14,
     15,
     16,
-    17, //    5
+    17,
     18,
     18,
     18,
@@ -113,9 +113,9 @@
     60
   ],
   // Spell scaling multipliers for levels 1 - 110, wow build 24461
-  "spell_scaling": {
+  spell_scaling: {
     // Item
-    "item": [
+    item: [
       3,
       3,
       4,
@@ -228,7 +228,7 @@
       1699
     ],
     // Consumable
-    "consumable": [
+    consumable: [
       360,
       360,
       360,
@@ -341,7 +341,7 @@
       1200000
     ],
     // Gem1
-    "gem1": [
+    gem1: [
       5,
       5,
       5,
@@ -454,7 +454,7 @@
       180
     ],
     // Gem2
-    "gem2": [
+    gem2: [
       6,
       6,
       6,
@@ -567,7 +567,7 @@
       240
     ],
     // Gem3
-    "gem3": [
+    gem3: [
       8,
       8,
       8,
@@ -680,7 +680,7 @@
       300
     ],
     // Health
-    "health": [
+    health: [
       154,
       168,
       180,
@@ -795,7 +795,7 @@
   },
 
   // Base mana points for levels 1 - 110, wow build 24461
-  "base_mp": [
+  base_mp: [
     [
       0,
       0,
@@ -2267,9 +2267,9 @@
   ],
 
   // Combat rating values for level 1 - 110, wow build 24461
-  "combat_ratings": {
+  combat_ratings: {
     // Dodge
-    "Dodge": [
+    Dodge: [
       0.796153166,
       0.796153046,
       0.796153082,
@@ -2382,7 +2382,7 @@
       515
     ],
     // Parry
-    "Parry": [
+    Parry: [
       0.796153166,
       0.796153046,
       0.796153082,
@@ -2495,7 +2495,7 @@
       515
     ],
     // Block
-    "Block": [
+    Block: [
       0.26538435,
       0.265384311,
       0.265384325,
@@ -2608,7 +2608,7 @@
       145
     ],
     // Hit - Melee
-    "Hit - Melee": [
+    'Hit - Melee': [
       0.307692,
       0.307692,
       0.307692,
@@ -2721,7 +2721,7 @@
       141
     ],
     // Hit - Ranged
-    "Hit - Ranged": [
+    'Hit - Ranged': [
       0.307692,
       0.307692,
       0.307692,
@@ -2834,7 +2834,7 @@
       141
     ],
     // Hit - Spell
-    "Hit - Spell": [
+    'Hit - Spell': [
       0.307692,
       0.307692,
       0.307692,
@@ -2947,7 +2947,7 @@
       141
     ],
     // Crit - Melee
-    "Crit - Melee": [
+    'Crit - Melee': [
       0.538462,
       0.538462,
       0.538462,
@@ -3060,7 +3060,7 @@
       400
     ],
     // Crit - Ranged
-    "Crit - Ranged": [
+    'Crit - Ranged': [
       0.538462,
       0.538462,
       0.538462,
@@ -3173,7 +3173,7 @@
       400
     ],
     // Crit - Spell
-    "Crit - Spell": [
+    'Crit - Spell': [
       0.538462,
       0.538462,
       0.538462,
@@ -3286,7 +3286,7 @@
       400
     ],
     // Resilience - Player Damage
-    "Resilience - Player Damage": [
+    'Resilience - Player Damage': [
       0.357366573,
       0.357366536,
       0.357366616,
@@ -3399,7 +3399,7 @@
       130
     ],
     // Lifesteal
-    "Lifesteal": [
+    Lifesteal: [
       0.342657636,
       0.342657636,
       0.342657636,
@@ -3512,7 +3512,7 @@
       230
     ],
     // Haste - Melee
-    "Haste - Melee": [
+    'Haste - Melee': [
       0.48076875,
       0.48076875,
       0.48076875,
@@ -3625,7 +3625,7 @@
       375
     ],
     // Haste - Ranged
-    "Haste - Ranged": [
+    'Haste - Ranged': [
       0.48076875,
       0.48076875,
       0.48076875,
@@ -3738,7 +3738,7 @@
       375
     ],
     // Haste - Spell
-    "Haste - Spell": [
+    'Haste - Spell': [
       0.48076875,
       0.48076875,
       0.48076875,
@@ -3851,7 +3851,7 @@
       375
     ],
     // Expertise
-    "Expertise": [
+    Expertise: [
       0.307692,
       0.307692,
       0.307692,
@@ -3964,7 +3964,7 @@
       141
     ],
     // Mastery
-    "Mastery": [
+    Mastery: [
       0.538462,
       0.538462,
       0.538462,
@@ -4077,7 +4077,7 @@
       400
     ],
     // PvP Power
-    "PvP Power": [
+    'PvP Power': [
       0.237820717,
       0.237820717,
       0.237820717,
@@ -4190,7 +4190,7 @@
       111
     ],
     // Versatility - Damage Done
-    "Versatility - Damage Done": [
+    'Versatility - Damage Done': [
       0.636364182,
       0.636364182,
       0.636364182,
@@ -4303,7 +4303,7 @@
       475
     ],
     // Versatility - Healing Done
-    "Versatility - Healing Done": [
+    'Versatility - Healing Done': [
       0.636364182,
       0.636364182,
       0.636364182,
@@ -4416,7 +4416,7 @@
       475
     ],
     // Versatility - Damage Taken
-    "Versatility - Damage Taken": [
+    'Versatility - Damage Taken': [
       1.272728364,
       1.272728364,
       1.272728364,
@@ -4529,7 +4529,7 @@
       950
     ],
     // Speed
-    "Speed": [
+    Speed: [
       0.122377727,
       0.122377727,
       0.122377727,
@@ -4642,7 +4642,7 @@
       80
     ],
     // Avoidance
-    "Avoidance": [
+    Avoidance: [
       0.122377727,
       0.122377727,
       0.122377727,
@@ -4757,9 +4757,9 @@
   },
 
   // Combat rating multipliers for item level 1 - 1300, wow build 24461
-  "combat_ratings_mult_by_ilvl": {
+  combat_ratings_mult_by_ilvl: {
     // Armor Multiplier
-    "armor": [
+    armor: [
       1,
       1,
       1,
@@ -6062,7 +6062,7 @@
       0.061419573 // 1300
     ],
     // Weapon Multiplier
-    "weapon": [
+    weapon: [
       1,
       1,
       1,
@@ -7365,7 +7365,7 @@
       0.061419573 // 1300
     ],
     // Trinket Multiplier
-    "trinket": [
+    trinket: [
       1,
       1,
       1,
@@ -8668,7 +8668,7 @@
       0.061419573 // 1300
     ],
     // Jewelry Multiplier
-    "jewelry": [
+    jewelry: [
       1,
       1,
       1,
@@ -9973,7 +9973,7 @@
   },
 
   // Item socket costs for item levels 1 - 1300, wow build 24461
-  "item_socket_cost_per_level": [
+  item_socket_cost_per_level: [
     0,
     0,
     0,
@@ -10977,7 +10977,7 @@
   ],
 
   // Enemy armor mitigation constants (K-value) for level 1 - 113, wow build 24461
-  "armor_mitigation_by_lvl": [
+  armor_mitigation_by_lvl: [
     157,
     167,
     177,
