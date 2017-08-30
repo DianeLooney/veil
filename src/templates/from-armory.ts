@@ -1,7 +1,7 @@
 import { IItem } from '../item'
 
 const statMappings = {
-  //[32]: '+crit:rating',
+  [32]: '+crit:rating',
   //[40]: '+vers:rating',
   //[73]: '+primary:rating',
   [7]: '+stam'
@@ -17,6 +17,13 @@ interface armoryItem {
   quality: number
   itemLevel: number
   stats: armoryStat[]
+  weaponInfo?: {
+    damage: {
+      exactMin: number
+      exactMax: number
+    }
+    weaponSpeed: number
+  }
 }
 interface armoryExport {
   name: string
@@ -52,6 +59,20 @@ function calcItems(src: armoryExport): IItem[] {
         stats[statMappings[s.stat]] = s.amount
       }
     })
+    if (i === 'mainHand') {
+      if (x.weaponInfo) {
+        stats['+mh:DamageMin'] = x.weaponInfo.damage.exactMin
+        stats['+mh:DamageMax'] = x.weaponInfo.damage.exactMax
+        stats['+mh:Period'] = x.weaponInfo.weaponSpeed
+      }
+    }
+    if (i === 'offHand') {
+      if (x.weaponInfo) {
+        stats['+oh:DamageMin'] = x.weaponInfo.damage.exactMin
+        stats['+oh:DamageMax'] = x.weaponInfo.damage.exactMax
+        stats['+oh:Period'] = x.weaponInfo.weaponSpeed
+      }
+    }
     retval.push({
       id: x.id,
       slug: x.name,

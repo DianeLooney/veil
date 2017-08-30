@@ -16,6 +16,7 @@ interface DamageEvent {
   target: IEntity
   type: string
   amount: number
+  weaponAmount: number
 }
 interface IHookFunc {
   (x: any): void
@@ -200,16 +201,17 @@ const dealDamage = function(args: DamageEvent): void {
     source: this,
     target: null,
     type: '',
-    amount: 350
+    amount: 0,
+    weaponAmount: 0
   }
   switch (args.type) {
-    case 'WEAPON_NORMALIZED':
-      report('ERROR', {
-        type: 'NYI',
-        details: `dealDamage handling not yet implemented for type ${args.type}`
-      })
-      dmg.type = 'SWING'
+    case 'PHYSICAL':
+      dmg.type = 'PHYSICAL'
       dmg.target = args.target
+      let a: number = args.amount
+      a += args.source.attributes['normalized_mh_weapon_damage']
+      a += args.source.attributes['normalized_oh_weapon_damage']
+      dmg.amount = a
       dmg.target.takeDamage(dmg)
       break
     default:
@@ -222,7 +224,7 @@ const dealDamage = function(args: DamageEvent): void {
   //args.target.takeDamage(args)
 }
 const die = function(source: IEntity): void {
-  report('IEntity_DIED', { unit: this, killingBlow: source })
+  report('ENTITY_DIED', { unit: this, killingBlow: source })
 }
 const takeDamage = function(args: DamageEvent): void {
   let dr: number = 1
@@ -332,6 +334,61 @@ const attachDefaultAttributes = function(e: IEntity) {
     function(e: IEntity): number {
       //TODO: Fix this Magic Number x2
       return 0.06 + e.attributes['+crit'] + e.attributes['+crit:rating'] * e.attributes['*crit:rating'] / 40000
+    },
+    []
+  )
+
+  computedProp(
+    e,
+    'attack_power',
+    function(e: IEntity): number {
+      //TODO: Be an actual number.
+      return 0
+    },
+    ['normalized_mh_weapon_damage', 'normalized_oh_weapon_damage', 'mh_weapon_dps', 'oh_weapon_dps']
+  )
+
+  basicProp(e, 0, '+mh:DamageMin', ['normalized_mh_weapon_damage', 'mh_weapon_dps'])
+  basicProp(e, 0, '+mh:DamageMax', ['normalized_mh_weapon_damage', 'mh_weapon_dps'])
+  basicProp(e, 0, '+mh:Period', ['normalized_mh_weapon_damage', 'mh_weapon_dps'])
+  basicProp(e, 0, '+oh:DamageMin', ['normalized_oh_weapon_damage', 'oh_weapon_dps'])
+  basicProp(e, 0, '+oh:DamageMax', ['normalized_oh_weapon_damage', 'oh_weapon_dps'])
+  basicProp(e, 0, '+oh:Period', ['normalized_oh_weapon_damage', 'oh_weapon_dps'])
+  computedProp(
+    e,
+    'normalized_mh_weapon_damage',
+    function(e: IEntity): number {
+      let dmg: number = 0
+      dmg += (e.attributes['+mh:DamageMin'] + e.attributes['+mh:DamageMax']) / 2
+      dmg += e.attributes['+mh:Period'] * (1 / 3.5) * e.attributes['attack_power']
+      return dmg
+    },
+    []
+  )
+  computedProp(
+    e,
+    'mh_weapon_dps',
+    function(e: IEntity): number {
+      return e.attributes['normalized_mh_weapon_dmg'] / e.attributes['+mh:Period']
+    },
+    []
+  )
+  computedProp(
+    e,
+    'normalized_oh_weapon_damage',
+    function(e: IEntity): number {
+      let dmg: number = 0
+      dmg += (e.attributes['+mh:DamageMin'] + e.attributes['+mh:DamageMax']) / 2
+      dmg += e.attributes['+mh:Period'] * (1 / 3.5) * e.attributes['attack_power']
+      return dmg / 2
+    },
+    []
+  )
+  computedProp(
+    e,
+    'oh_weapon_dps',
+    function(e: IEntity): number {
+      return e.attributes['normalized_oh_weapon_dmg'] / e.attributes['+oh:Period']
     },
     []
   )

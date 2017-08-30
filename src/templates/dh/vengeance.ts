@@ -11,7 +11,8 @@ const shear = Object.assign(Object.create(DefaultAbility), {
         source: e,
         type: 'WEAPON_NORMALIZED',
         target: t,
-        amount: 3.4
+        amount: 0,
+        weaponAmount: 3.4
       })
       e.gainPower('Pain', 100)
     }

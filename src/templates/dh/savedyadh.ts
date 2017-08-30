@@ -1,5 +1,5 @@
 export default {
-  lastModified: 1504065561000,
+  lastModified: 1504117188000,
   name: 'Savedyadh',
   realm: "Mal'Ganis",
   battlegroup: 'Vindication',
@@ -133,11 +133,10 @@ export default {
       itemLevel: 935,
       tooltipParams: { timewalkerLevel: 110 },
       stats: [
-        { stat: 32, amount: 329 },
-        { stat: 40, amount: 672 },
-        { stat: 64, amount: 562 },
-        { stat: 73, amount: 1470 },
-        { stat: 7, amount: 2206 }
+        { stat: 32, amount: 348 },
+        { stat: 73, amount: 1691 },
+        { stat: 49, amount: 711 },
+        { stat: 7, amount: 2537 }
       ],
       armor: 191,
       context: 'challenge-mode',
@@ -184,30 +183,6 @@ export default {
         { stat: 73, amount: 1786 },
         { stat: 49, amount: 367 },
         { stat: 7, amount: 2680 }
-      ],
-      armor: 226,
-      context: 'challenge-mode',
-      bonusLists: [3536, 1562, 3528],
-      artifactId: 0,
-      displayInfoId: 150751,
-      artifactAppearanceId: 0,
-      artifactTraits: [],
-      relics: [],
-      appearance: { itemAppearanceModId: 0 }
-    },
-    legs: {
-      id: 134455,
-      name: 'Bonespur Studded Legwraps',
-      icon: 'inv_belt_leather_legiondungeon_c_01',
-      quality: 4,
-      itemLevel: 910,
-      tooltipParams: { timewalkerLevel: 110 },
-      stats: [
-        { stat: 32, amount: 595 },
-        { stat: 40, amount: 1195 },
-        { stat: 64, amount: 562 },
-        { stat: 73, amount: 2614 },
-        { stat: 7, amount: 3922 }
       ],
       armor: 226,
       context: 'challenge-mode',
