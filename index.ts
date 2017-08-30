@@ -11,8 +11,9 @@ import consts from './consts'
 const w = new World()
 const e = Object.create(savedya) as IEntity
 w.spawn(e)
-console.log(e.attributes['stamina'])
-console.log(e.attributes['health-max'])
+console.log('stam:', e.attributes['stamina'])
+console.log('health:', e.attributes['health-max'])
+console.log('crit:', e.attributes['crit'])
 e.castAbility('shear', e)
 e.castAbility('shear', e)
 w.despawn(e)

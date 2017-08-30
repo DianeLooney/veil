@@ -2,7 +2,7 @@ import { IAbility } from './ability'
 interface IItem {
   id: number
   slug: string
-  slot: number
+  slot: string
   stats: { [key: string]: number }
 }
 export { IItem }
