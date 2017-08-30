@@ -123,6 +123,7 @@ savedya.onSpawn.push((e: IEntity): void => {
     slot: 0,
     stats: {
       '+stam': 2006
+      //'*stam': 1.58
     }
   })
   e.equipItem('weaponOH', {
@@ -130,7 +131,9 @@ savedya.onSpawn.push((e: IEntity): void => {
     slug: '',
     slot: 0,
     stats: {
-      '+stam': 2006
+      '+stam': 2006,
+      '*stam': 1.1,
+      '*maxHealth': 1.04
     }
   })*/
 })
