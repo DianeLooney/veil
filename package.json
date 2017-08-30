@@ -1,0 +1,27 @@
+{
+  "name": "veil",
+  "version": "0.0.0",
+  "description": "wow sim",
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^8.0.26",
+    "chai": "^4.1.1",
+    "mocha": "^3.5.0",
+    "ts-node": "^3.3.0",
+    "typings": "^2.1.1"
+  },
+  "scripts": {
+    "test": "mocha -r ts-node/register tests/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DianeLooney/veil.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DianeLooney/veil/issues"
+  },
+  "homepage": "https://github.com/DianeLooney/veil#readme"
+}

@@ -1,12 +1,12 @@
-import { IEntity, DefaultEntity } from './entity'
-import World from './world.js'
-import { IAbility } from './ability.js'
-import { IModifier } from './modifier'
-import { IActor } from './actor'
-import dhVengeance from './templates/dh/vengeance'
-import savedya from './templates/dh/savedya'
-import { IActorSpammy, SpammyTemplate } from './templates/actors/spammy'
-import consts from './consts'
+import { IEntity, DefaultEntity } from './src/entity'
+import World from './src/world.js'
+import { IAbility } from './src/ability.js'
+import { IModifier } from './src/modifier'
+import { IActor } from './src/actor'
+import dhVengeance from './src/templates/dh/vengeance'
+import savedya from './src/templates/dh/savedya'
+import { IActorSpammy, SpammyTemplate } from './src/templates/actors/spammy'
+import consts from './src/consts'
 
 const w = new World()
 const e = Object.create(savedya) as IEntity
