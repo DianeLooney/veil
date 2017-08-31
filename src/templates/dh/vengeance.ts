@@ -1,4 +1,6 @@
 import { IEntity, DefaultEntity } from '../../Entity'
+import { IItem } from '../../item'
+import World from '../../world'
 import { IAbility, DefaultAbility, DefaultPassive } from '../../Ability.js'
 import { IModifier } from '../../Modifier.js'
 import artifactMappings from '../../consts/artifactMappings'
@@ -8,14 +10,14 @@ const shear = Object.assign(Object.create(DefaultAbility), {
   slug: 'shear',
   onCast: [
     (e: IEntity, t: IEntity) => {
-      e.dealDamage({
+      /*e.dealDamage({
         source: e,
         type: 'WEAPON_NORMALIZED',
         target: t,
         amount: 0,
         weaponAmount: 3.4
-      })
-      e.gainPower('Pain', 100)
+      })*/
+      //e.gainPower('Pain', 100)
     }
   ]
 })
@@ -106,29 +108,54 @@ const artifactTraitsById = {
   }
 }
 const vengeance = Object.assign(Object.create(DefaultEntity), {
-  onSpawn: [
-    (e: IEntity) => {
-      e.learnPower('Pain', 0, 1000)
-      if (e.items.mainHand.artifactId === 60) {
+  onInit: [
+    function(w: World, e: IEntity) {
+      w.teachAbility(e, belfCritChance)
+      w.teachAbility(e, shear)
+      w.teachAbility(e, increasedThreat)
+      w.teachAbility(e, demonicWards)
+      w.teachAbility(e, leatherSpecialization)
+      w.teachAbility(e, criticalStrikes)
+      w.teachAbility(e, illidariDurability)
+    }
+  ],
+  onEquipItem: [
+    (w: World, e: IEntity, i: IItem, s: string) => {
+      if (i.artifactId === 60) {
         let totalRanks = -3
-        e.items.mainHand.artifactTraits.forEach(t => {
+        i.artifactTraits.forEach(t => {
           totalRanks += t.rank
           let spellId = artifactMappings[t.id][t.rank - 1]
           if (artifactTraitsById[spellId] !== undefined) {
-            e.learnAbility(artifactTraitsById[spellId](t.rank))
+            w.teachAbility(e, artifactTraitsById[spellId](t.rank))
           } else {
             console.warn(`unrecognized artifact trait: ${spellId} (rank ${t.rank})`)
           }
         })
-        e.learnAbility(artifactTraitsById[211309](totalRanks))
+        w.teachAbility(e, artifactTraitsById[211309](totalRanks))
       }
-      e.learnAbility(belfCritChance)
-      e.learnAbility(shear)
-      e.learnAbility(increasedThreat)
-      e.learnAbility(demonicWards)
-      e.learnAbility(leatherSpecialization)
-      e.learnAbility(criticalStrikes)
-      e.learnAbility(illidariDurability)
+    }
+  ],
+  onUnequipItem: [
+    (w: World, e: IEntity, i: IItem, s: string) => {
+      if (i.artifactId === 60) {
+        let totalRanks = -3
+        i.artifactTraits.forEach(t => {
+          totalRanks += t.rank
+          let spellId = artifactMappings[t.id][t.rank - 1]
+          if (artifactTraitsById[spellId] !== undefined) {
+            w.unteachAbility(e, artifactTraitsById[spellId](t.rank))
+          } else {
+            console.warn(`unrecognized artifact trait: ${spellId} (rank ${t.rank})`)
+          }
+        })
+        w.unteachAbility(e, artifactTraitsById[211309](totalRanks))
+      }
+    }
+  ],
+  onSpawn: [
+    (w: World, e: IEntity) => {
+      //e.learnPower('Pain', 0, 1000)
     }
   ]
 })

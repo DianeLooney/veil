@@ -1,7 +1,7 @@
 import { IEntity, DefaultEntity } from './Entity'
-
+import World from './World'
 interface ILearnFunc {
-  (e: IEntity): void
+  (w: World, e: IEntity): void
 }
 interface ICastFunc {
   (e: IEntity, ...targets: IEntity[]): void
@@ -20,18 +20,18 @@ interface IAbility {
   onUnlearn: ILearnFunc[]
   onCast: ICastFunc[]
   triggerCooldown(e: IEntity): void
-  learn(e: IEntity): void
-  unlearn(e: IEntity): void
+  learn: ILearnFunc
+  unlearn: ILearnFunc
   cast(...targets: IEntity[]): void
 }
 const triggerCooldown = function(e: IEntity): void {
   //e[this.key].cooldown = this.cooldown
 }
-const activeLearn = function(e: IEntity): void {
+const activeLearn = function(w: World, e: IEntity): void {
   this.host = e
   this.onLearn.forEach(h => h(e))
 }
-const activeUnlearn = function(e: IEntity): void {
+const activeUnlearn = function(w: World, e: IEntity): void {
   this.onUnlearn.forEach(h => h(e))
 }
 const activeCast = function(...targets: IEntity[]): void {
@@ -57,33 +57,15 @@ const DefaultAbility: IAbility = {
   cast: activeCast
 }
 
-const passiveLearn = function(e: IEntity): void {
+const passiveLearn = function(w: World, e: IEntity): void {
   this.host = e
   for (var a in this.attributes) {
-    switch (a.charAt(0)) {
-      case '+':
-        e.attributes[a] += this.attributes[a]
-        break
-      case '*':
-        e.attributes[a] *= this.attributes[a]
-        break
-      default:
-      // TODO: Error reporting
-    }
+    w.gainAttribute(e, a, this.attributes[a])
   }
 }
-const passiveUnlearn = function(e: IEntity): void {
+const passiveUnlearn = function(w: World, e: IEntity): void {
   for (var a in this.attributes) {
-    switch (a.charAt[0]) {
-      case '+':
-        e.attributes[a] -= this.attributes[a]
-        break
-      case '*':
-        e.attributes[a] /= this.attributes[a]
-        break
-      default:
-      // TODO: Error reporting
-    }
+    w.loseAttribute(e, a, this.attributes[a])
   }
 }
 const passiveCast = function(...target: IEntity[]): void {}

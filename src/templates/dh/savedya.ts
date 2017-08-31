@@ -2,15 +2,15 @@ import vengeance from './vengeance'
 import { IEntity } from '../../entity'
 import data from './savedyadh'
 import { calcItems } from '../fromArmory'
+import World from '../../world'
+
 const savedya = Object.assign(Object.create(vengeance), {
-  slug: 'savedya',
-  onInit: [
-    (e: IEntity) => {
-      let items = calcItems(data)
-      items.forEach(item => {
-        e.equipItem(item.slot, item)
-      })
-    }
-  ]
+  slug: 'savedya'
+}) as IEntity
+savedya.onInit.push((w: World, e: IEntity) => {
+  let items = calcItems(data)
+  items.forEach(item => {
+    w.equipItem(e, item.slot, item)
+  })
 })
 export default savedya

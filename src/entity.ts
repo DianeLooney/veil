@@ -1,5 +1,6 @@
 import report from './report'
 import { IAbility } from './ability'
+import World from './world'
 import { IModifier } from './modifier'
 import { IItem } from './item'
 import consts from './consts'
@@ -8,8 +9,14 @@ interface IResource {
   current: number
   max: number
 }
+interface IInitFunc {
+  (w: World, e: IEntity): void
+}
 interface ISpawnFunc {
-  (e: IEntity): void
+  (w: World, e: IEntity): void
+}
+interface IItemFunc {
+  (w: World, e: IEntity, i: IItem, slot: string): void
 }
 interface DamageEvent {
   source: IEntity
@@ -46,214 +53,28 @@ interface IEntity {
     mainHand: IItem
     offHand: IItem
   }
-  powers: { [key: string]: IResource }
-  attributes: { [key: string]: number }
-  _attributes: { [key: string]: number }
   _hooks: { [key: string]: IHookFunc[] }
 
   abilities: { [key: string]: IAbility }
   modifiers: IModifier[]
 
-  onInit: ISpawnFunc[]
+  onInit: IInitFunc[]
   onSpawn: ISpawnFunc[]
   onDespawn: ISpawnFunc[]
 
+  onEquipItem: IItemFunc[]
+  onUnequipItem: IItemFunc[]
+
   _gcdRemaining: number
 
-  learnAbility(a: IAbility): void
-  unlearnAbility(a: IAbility): void
-  gainModifier(m: IModifier): void
-  dropModifier(m: IModifier): void
-  gainPower(type: string, amount: number): void
-  spendPower(type: string, amount: number): void
-  learnPower(type: string, current: number, max: number): void
-  unleanPower(type: string): void
   triggerGCD(): void
   isOnGCD(): boolean
-  dealDamage(args: DamageEvent): void
-  die(source: IEntity): void
-  takeDamage(args: DamageEvent): void
-
-  castAbility(slug: string, ...targets: IEntity[]): void
-
-  equipItem(slot: string, i: IItem): void
-  unequipItem(slot: string): void
-}
-const equipItem = function(slot: string, i: IItem): void {
-  if (this.items[slot] !== undefined) {
-    //TODO: some error message
-    console.log('Equipping a duplicate!')
-    return
-  }
-  this.items[slot] = i
-  //TODO: dispatch Item equipped event
-  for (var a in i.stats) {
-    switch (a.charAt(0)) {
-      case '+':
-        this.attributes[a] += i.stats[a]
-        break
-      case '*':
-        this.attributes[a] *= i.stats[a]
-        break
-      default:
-      // TODO: Error reporting
-    }
-  }
-}
-const unequipItem = function(slot: string): void {
-  if (this.items[slot] === undefined) {
-    //TODO: some error message
-    return
-  }
-  let i = this.items[slot]
-  for (var a in i.stats) {
-    switch (a.charAt(0)) {
-      case '+':
-        this.attributes[a] -= i.stats[a]
-        break
-      case '*':
-        this.attributes[a] /= i.stats[a]
-        break
-      default:
-      // TODO: Error reporting
-    }
-  }
-  this.items[slot] = undefined
-}
-const learnAbility = function(a: IAbility): void {
-  if (!this.abilities[a.slug]) {
-    this.abilities[a.slug] = a
-    a.learn(this)
-    report('ABILITY_LEARNED', { entity: this, ability: a })
-  }
-}
-const unlearnAbility = function(a: IAbility): void {
-  if (this.abilities[a.slug]) {
-    this.abilities[a.slug] = undefined
-    a.unlearn(this)
-    report('ABILITY_UNLEARNED', { entity: this, ability: a })
-  }
-}
-const gainModifier = function(m: IModifier): void {
-  this.modifiers.push(m)
-  m.apply(this)
-  report('MODIFIER_GAINED', { entity: this, modifier: m })
-}
-const dropModifier = function(m: IModifier): void {
-  let i = this.modifiers.indexOf(m)
-  this.modifiers.splice(i)
-  report('MODIFIER_DROPPED', { entity: this, modifier: m })
-}
-const gainPower = function(type: string, amount: number): void {
-  let x = 0
-  let max = this.attributes[`maxPower:${type}`]
-  if (this.powers[type].current + amount < max) {
-    x = amount
-  } else if (amount > 0) {
-    x = max - this.powers[type].current
-  }
-  this.powers[type].current += x
-  report('POWER_GAINED', {
-    entity: this,
-    power: type,
-    amount: amount,
-    new: this.powers[type].current
-  })
-}
-const spendPower = function(type: string, amount: number): void {
-  if (this.powers[type].current >= amount) {
-    this.powers[type].current -= amount
-    report('POWER_SPENT', {
-      entity: this,
-      power: type,
-      amount: amount,
-      new: this.powers[type].current
-    })
-  }
-}
-const learnPower = function(type: string, current: number, max: number): void {
-  this.powers[type] = { current, max }
-
-  basicProp(this, max, `+maxPower:${type}`, [`maxPower:${type}`])
-  basicProp(this, 1, `*maxPower:${type}`, [`maxPower:${type}`])
-  computedProp(
-    this,
-    `maxPower:${type}`,
-    function(e: IEntity): number {
-      //TODO: Fix this Magic Number
-      return e.attributes[`+maxPower:${type}`] * e.attributes[`*maxPower:${type}`]
-    },
-    []
-  )
-  report('POWER_LEARNED', { entity: this, power: type })
-}
-const unleanPower = function(type: string): void {
-  this.powers[type] = undefined
-  report('POWER_UNLEARNED', { entity: this, power: type })
 }
 const triggerGCD = function(): void {
   this._gcdRemaining = 1.5
 }
 const isOnGCD = function(): boolean {
   return this._gcdRemaining > 0
-}
-const dealDamage = function(args: DamageEvent): void {
-  let dmg: DamageEvent = {
-    source: this,
-    target: null,
-    type: '',
-    amount: 0,
-    weaponAmount: 0
-  }
-  switch (args.type) {
-    case 'PHYSICAL':
-      dmg.type = 'PHYSICAL'
-      dmg.target = args.target
-      let a: number = args.amount
-      a += args.source.attributes['normalized_mh_weapon_damage']
-      a += args.source.attributes['normalized_oh_weapon_damage']
-      dmg.amount = a
-      dmg.target.takeDamage(dmg)
-      break
-    default:
-      report('ERROR', {
-        type: 'NYI',
-        details: `dealDamage handling not yet implemented for type ${args.type}`
-      })
-      return
-  }
-  //args.target.takeDamage(args)
-}
-const die = function(source: IEntity): void {
-  report('ENTITY_DIED', { unit: this, killingBlow: source })
-}
-const takeDamage = function(args: DamageEvent): void {
-  let dr: number = 1
-  if (args.type == 'PHYSICAL' || args.type == 'SWING') {
-    dr *= this._attributes['*drPhysical']
-  } else {
-    dr *= this._attributes['*drMagical']
-  }
-  args.amount *= dr
-  if (this.health > args.amount) {
-    this.health -= args.amount
-    report('DAMAGE_TAKEN', args)
-  } else {
-    this.health = 0
-    report('DAMAGE_TAKEN', args)
-    this.die(args.source)
-  }
-
-  /*report('ERROR', {
-      type: 'NYI',
-      details: `takeDamage handling not yet implemented for type ${args.type}`
-    })*/
-}
-const castAbility = function(slug: string, ...targets: IEntity[]): void {
-  let a = this.abilities[slug]
-  if (a) {
-    a.cast(...targets)
-  }
 }
 
 interface getter {
@@ -266,37 +87,37 @@ interface setter {
   (value: any): void
 }
 
-const invalidationFunc = function(e: IEntity, k: string, values: string[]): setter {
+const invalidationFunc = function(a: any, k: string, values: string[]): setter {
   return function(value: number) {
-    e._attributes[k] = value
+    a['_' + k] = value
     values.forEach(x => {
-      e._attributes[x] = undefined
+      a['_' + x] = undefined
     })
   }
 }
-const basicProp = function(e: IEntity, def: number, name: string, dependencies: string[]): void {
-  Object.defineProperty(e.attributes, name, {
-    get: passthrough(e, name),
-    set: invalidationFunc(e, name, dependencies)
+const basicProp = function(a: any, def: number, name: string, dependencies: string[]): void {
+  Object.defineProperty(a, name, {
+    get: passthrough(a, name),
+    set: invalidationFunc(a, name, dependencies)
   })
-  e.attributes[name] = def
+  a[name] = def
 }
 
-const passthrough = function(e: IEntity, x: string): getter {
+const passthrough = function(a: any, x: string): getter {
   return function() {
-    return e._attributes[x]
+    return a['_' + x]
   }
 }
-const computedProp = function(e: IEntity, name: string, calcFunc: entityGetter, dependencies: string[]) {
-  Object.defineProperty(e.attributes, name, {
+const computedProp = function(a: any, name: string, calcFunc: entityGetter, dependencies: string[]) {
+  Object.defineProperty(a, name, {
     get: function(): number {
-      if (e._attributes[name] === undefined) {
-        e._attributes[name] = calcFunc(e)
+      if (a['_' + name] === undefined) {
+        a['_' + name] = calcFunc(a)
         dependencies.forEach(x => {
-          e._attributes[x] = undefined
+          a['_' + x] = undefined
         })
       }
-      return e._attributes[name]
+      return a['_' + name]
     }
   })
 }
@@ -306,9 +127,9 @@ const attachDefaultAttributes = function(e: IEntity) {
   computedProp(
     e,
     'stamina',
-    function(e: IEntity): number {
+    function(e: any): number {
       //TODO: Fix this Magic Number
-      return Math.round((6259 + e.attributes['+stam:rating']) * e.attributes['*stam:rating'])
+      return Math.round((6259 + e['+stam:rating']) * e['*stam:rating'])
     },
     []
   )
@@ -319,9 +140,9 @@ const attachDefaultAttributes = function(e: IEntity) {
   computedProp(
     e,
     'haste',
-    function(e: IEntity): number {
+    function(e: any): number {
       //TODO: Fix this Magic Number
-      return e.attributes['+haste'] + e.attributes['+haste:rating'] * e.attributes['*haste:rating'] / 375
+      return e['+haste'] + e['+haste:rating'] * e['*haste:rating'] / 375
     },
     ['armor_dr']
   )
@@ -332,9 +153,9 @@ const attachDefaultAttributes = function(e: IEntity) {
   computedProp(
     e,
     'crit',
-    function(e: IEntity): number {
+    function(e: any): number {
       //TODO: Fix this Magic Number x2
-      return 0.05 + 0.01 + e.attributes['+crit'] + e.attributes['+crit:rating'] * e.attributes['*crit:rating'] / 40000
+      return 0.05 + 0.01 + e['+crit'] + e['+crit:rating'] * e['*crit:rating'] / 40000
     },
     []
   )
@@ -346,7 +167,7 @@ const attachDefaultAttributes = function(e: IEntity) {
   computedProp(
     e,
     'attack_power',
-    function(e: IEntity): number {
+    function(e: any): number {
       //TODO: Be an actual number.
       return 0
     },
@@ -362,10 +183,10 @@ const attachDefaultAttributes = function(e: IEntity) {
   computedProp(
     e,
     'normalized_mh_weapon_damage',
-    function(e: IEntity): number {
+    function(e: any): number {
       let dmg: number = 0
-      dmg += (e.attributes['+mh:DamageMin'] + e.attributes['+mh:DamageMax']) / 2
-      dmg += e.attributes['+mh:Period'] * (1 / 3.5) * e.attributes['attack_power']
+      dmg += (e['+mh:DamageMin'] + e['+mh:DamageMax']) / 2
+      dmg += e['+mh:Period'] * (1 / 3.5) * e['attack_power']
       return dmg
     },
     []
@@ -373,18 +194,18 @@ const attachDefaultAttributes = function(e: IEntity) {
   computedProp(
     e,
     'mh_weapon_dps',
-    function(e: IEntity): number {
-      return e.attributes['normalized_mh_weapon_dmg'] / e.attributes['+mh:Period']
+    function(e: any): number {
+      return e['normalized_mh_weapon_dmg'] / e['+mh:Period']
     },
     []
   )
   computedProp(
     e,
     'normalized_oh_weapon_damage',
-    function(e: IEntity): number {
+    function(e: any): number {
       let dmg: number = 0
-      dmg += (e.attributes['+mh:DamageMin'] + e.attributes['+mh:DamageMax']) / 2
-      dmg += e.attributes['+mh:Period'] * (1 / 3.5) * e.attributes['attack_power']
+      dmg += (e['+mh:DamageMin'] + e['+mh:DamageMax']) / 2
+      dmg += e['+mh:Period'] * (1 / 3.5) * e['attack_power']
       return dmg / 2
     },
     []
@@ -392,8 +213,8 @@ const attachDefaultAttributes = function(e: IEntity) {
   computedProp(
     e,
     'oh_weapon_dps',
-    function(e: IEntity): number {
-      return e.attributes['normalized_oh_weapon_dmg'] / e.attributes['+oh:Period']
+    function(e: any): number {
+      return e['normalized_oh_weapon_dmg'] / e['+oh:Period']
     },
     []
   )
@@ -403,15 +224,15 @@ const attachDefaultAttributes = function(e: IEntity) {
   computedProp(
     e,
     'armor',
-    function(e: IEntity): number {
-      return e.attributes['+armor'] * e.attributes['*armor']
+    function(e: any): number {
+      return e['+armor'] * e['*armor']
     },
     ['armor_dr']
   )
   computedProp(
     e,
     'armor_k',
-    function(e: IEntity): number {
+    function(e: any): number {
       return consts('armor-k', e.level)
     },
     ['armor_dr']
@@ -419,9 +240,9 @@ const attachDefaultAttributes = function(e: IEntity) {
   computedProp(
     e,
     'armor_dr',
-    function(e: IEntity): number {
+    function(e: any): number {
       //mult = 1 / (1 + x / k)
-      return 1 / (1 + e.attributes['armor'] / e.attributes['armor_k'])
+      return 1 / (1 + e['armor'] / e['armor_k'])
     },
     []
   )
@@ -438,9 +259,9 @@ const attachDefaultAttributes = function(e: IEntity) {
   computedProp(
     e,
     'health-max',
-    function(e: IEntity): number {
+    function(e: any): number {
       //TODO: Fix this magic number
-      let m = Math.floor(60 * e.attributes['stamina'] * (1 + e.attributes['+maxHealth%']) * e.attributes['*maxHealth'])
+      let m = Math.floor(60 * e['stamina'] * (1 + e['+maxHealth%']) * e['*maxHealth'])
       if (m < 0) {
         return 1
       }
@@ -456,9 +277,6 @@ const DefaultEntity: IEntity = {
   level: 1,
   health: 100,
   alive: true,
-  powers: {},
-  attributes: {},
-  _attributes: {},
   _hooks: {
     TakingMeleeWhiteDamage: [],
     TakingMeleeYellowDamage: [],
@@ -491,25 +309,12 @@ const DefaultEntity: IEntity = {
   onInit: [],
   onSpawn: [],
   onDespawn: [],
-
+  onEquipItem: [],
+  onUnequipItem: [],
   _gcdRemaining: 0,
 
-  learnAbility,
-  unlearnAbility,
-  gainModifier,
-  dropModifier,
-  gainPower,
-  spendPower,
-  learnPower,
-  unleanPower,
   triggerGCD,
-  isOnGCD,
-  dealDamage,
-  die,
-  takeDamage,
-  castAbility,
-  equipItem,
-  unequipItem
+  isOnGCD
 }
 
 export { IEntity }

@@ -35,12 +35,13 @@ const DefaultModifier: IModifier = {
   apply(e: IEntity): void {
     this.host = e
     for (var a in this.attributes) {
+      //TODO: Move this to world apply
       switch (a.charAt[0]) {
         case '+':
-          e.attributes[a] += this.attributes[a]
+          e[a] += this.attributes[a]
           break
         case '*':
-          e.attributes[a] *= this.attributes[a]
+          e[a] *= this.attributes[a]
           break
         default:
         // TODO: Error reporting
@@ -50,12 +51,13 @@ const DefaultModifier: IModifier = {
   },
   drop(e: IEntity): void {
     for (var a in this.attributes) {
+      //TODO: Move this to world drop
       switch (a.charAt[0]) {
         case '+':
-          e.attributes[a] -= this.attributes[a]
+          e[a] -= this.attributes[a]
           break
         case '*':
-          e.attributes[a] /= this.attributes[a]
+          e[a] /= this.attributes[a]
           break
         default:
         // TODO: Error reporting
