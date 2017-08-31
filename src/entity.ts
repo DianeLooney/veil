@@ -307,7 +307,10 @@ const attachDefaultAttributes = function(e: IEntity) {
     'stamina',
     function(e: IEntity): number {
       //TODO: Fix this Magic Number
-      return Math.floor((6259 + e.attributes['+stam']) * e.attributes['*stam'])
+      console.log('+stam:', e.attributes['+stam'])
+      console.log('*stam:', e.attributes['*stam'])
+      console.log('stam:', (6259 + e.attributes['+stam']) * e.attributes['*stam'])
+      return (6259 + e.attributes['+stam']) * e.attributes['*stam']
     },
     []
   )

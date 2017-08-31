@@ -54,21 +54,44 @@ const tempArtifactWorkarounds = Object.assign(Object.create(DefaultPassive), {
   id: 221351,
   slug: 'temp-strikes',
   attributes: {
-    '*stam': (1 + 59 * 0.0075) * 1.1,
+    '*stam': 1 + 59 * 0.0075,
+    '+crit:rating': 400
+  }
+})
+const illidariDurability = Object.assign(Object.create(DefaultPassive), {
+  id: 0,
+  slug: 'illidari-durability',
+  attributes: {
+    '*stam': 1.1
+  }
+})
+const willOfTheIllidari = Object.assign(Object.create(DefaultPassive), {
+  id: 0,
+  slug: 'will-of-the-illidari',
+  attributes: {
     '*maxHealth': 1.04
   }
 })
-
+const belfCritChance = Object.assign(Object.create(DefaultPassive), {
+  id: 221351,
+  slug: 'belf-crit',
+  attributes: {
+    '+crit': 0.01
+  }
+})
 const vengeance = Object.assign(Object.create(DefaultEntity), {
   onSpawn: [
     (e: IEntity) => {
       e.learnPower('Pain', 0, 1000)
+      e.learnAbility(belfCritChance)
       e.learnAbility(shear)
       e.learnAbility(increasedThreat)
       e.learnAbility(demonicWards)
       e.learnAbility(leatherSpecialization)
       e.learnAbility(criticalStrikes)
       e.learnAbility(tempArtifactWorkarounds)
+      e.learnAbility(illidariDurability)
+      e.learnAbility(willOfTheIllidari)
     }
   ]
 })
