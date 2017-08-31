@@ -1,6 +1,7 @@
 import { IEntity, DefaultEntity } from '../../Entity'
 import { IAbility, DefaultAbility, DefaultPassive } from '../../Ability.js'
 import { IModifier } from '../../Modifier.js'
+import artifactMappings from '../../consts/artifactMappings'
 
 const shear = Object.assign(Object.create(DefaultAbility), {
   id: 203782,
@@ -32,15 +33,15 @@ const demonicWards = Object.assign(Object.create(DefaultPassive), {
     '*drAll': 0.8,
     '+attackerCritChance': -0.06,
     '+expertise': 3,
-    '*stam': 1.55,
-    '+armor%': 0.75
+    '*stam:rating': 1.55,
+    '*armor': 1.75
   }
 })
 const leatherSpecialization = Object.assign(Object.create(DefaultPassive), {
   id: 226359,
   slug: 'leather-specialization',
   attributes: {
-    '*stam': 1.05
+    '*stam:rating': 1.05
   }
 })
 const criticalStrikes = Object.assign(Object.create(DefaultPassive), {
@@ -54,7 +55,6 @@ const tempArtifactWorkarounds = Object.assign(Object.create(DefaultPassive), {
   id: 221351,
   slug: 'temp-strikes',
   attributes: {
-    '*stam': 1 + 59 * 0.0075,
     '+crit:rating': 400
   }
 })
@@ -62,14 +62,7 @@ const illidariDurability = Object.assign(Object.create(DefaultPassive), {
   id: 0,
   slug: 'illidari-durability',
   attributes: {
-    '*stam': 1.1
-  }
-})
-const willOfTheIllidari = Object.assign(Object.create(DefaultPassive), {
-  id: 0,
-  slug: 'will-of-the-illidari',
-  attributes: {
-    '*maxHealth': 1.04
+    //'*stam': 1.1  -- currently broken
   }
 })
 const belfCritChance = Object.assign(Object.create(DefaultPassive), {
@@ -79,19 +72,63 @@ const belfCritChance = Object.assign(Object.create(DefaultPassive), {
     '+crit': 0.01
   }
 })
+
+const artifactTraitsById = {
+  212819: function willOfTheIllidari(rank: number): any {
+    return Object.assign(Object.create(DefaultPassive), {
+      id: 212819,
+      slug: 'will-of-the-illidari',
+      attributes: {
+        '*maxHealth': 1.0 + 0.01 * rank
+      }
+    })
+  },
+  211309: function artificialStamina(rank: number): any {
+    return Object.assign(Object.create(DefaultPassive), {
+      id: 212819,
+      slug: 'artificial-stamina',
+      attributes: {
+        '*stam:rating': 1.0 + 0.01 * rank
+      }
+    })
+  },
+  241091: function illidariDurability(rank: number): any {
+    return Object.assign(Object.create(DefaultPassive), {
+      id: 212819,
+      slug: 'illidari-durability',
+      attributes: {
+        //currently bugged: '*stam:rating': 1.1
+        //TODO: Damage Done
+        '*armor': 1.2
+        //TODO: Pet damage done
+      }
+    })
+  }
+}
 const vengeance = Object.assign(Object.create(DefaultEntity), {
   onSpawn: [
     (e: IEntity) => {
       e.learnPower('Pain', 0, 1000)
+      if (e.items.mainHand.artifactId === 60) {
+        let totalRanks = -3
+        e.items.mainHand.artifactTraits.forEach(t => {
+          totalRanks += t.rank
+          let spellId = artifactMappings[t.id][t.rank - 1]
+          if (artifactTraitsById[spellId] !== undefined) {
+            e.learnAbility(artifactTraitsById[spellId](t.rank))
+          } else {
+            console.warn(`unrecognized artifact trait: ${spellId} (rank ${t.rank})`)
+          }
+        })
+        e.learnAbility(artifactTraitsById[211309](totalRanks))
+      }
       e.learnAbility(belfCritChance)
       e.learnAbility(shear)
       e.learnAbility(increasedThreat)
       e.learnAbility(demonicWards)
       e.learnAbility(leatherSpecialization)
       e.learnAbility(criticalStrikes)
-      e.learnAbility(tempArtifactWorkarounds)
       e.learnAbility(illidariDurability)
-      e.learnAbility(willOfTheIllidari)
     }
   ]
 })

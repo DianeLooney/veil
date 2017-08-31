@@ -45,9 +45,12 @@ class World {
       this.actors.splice(i)
     }
   }
+  init(e: IEntity): void {
+    attachDefaultAttributes(e)
+    e.onInit.forEach(h => h(e))
+  }
   spawn(e: IEntity): void {
     this.entities.push(e)
-    attachDefaultAttributes(e)
     e.onSpawn.forEach(h => h(e))
     report('ENTITY_SPAWNED', { entity: e })
   }

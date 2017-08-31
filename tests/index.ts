@@ -1,7 +1,7 @@
-import { dhSavedya0 } from './fixtures/'
+/*import { dhSavedya0 } from './fixtures/'
 import { IEntity, DefaultEntity } from '../src/entity'
 import { expect } from 'chai'
-import { calcItems } from '../src/templates/from-armory'
+import { calcItems } from '../src/templates/fromArmory'
 import { describe, it } from 'mocha'
 describe('Fixtures', () => {
   describe('dh-savedya-0', () => {
@@ -47,3 +47,4 @@ describe('Fixtures', () => {
     })
   })
 })
+*/
