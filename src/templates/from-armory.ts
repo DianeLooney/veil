@@ -1,11 +1,6 @@
 import { IItem } from '../item'
+import statMappings from '../consts/stat_mappings'
 
-const statMappings = {
-  [32]: '+crit:rating',
-  //[40]: '+vers:rating',
-  //[73]: '+primary:rating',
-  [7]: '+stam'
-}
 interface armoryStat {
   stat: number
   amount: number

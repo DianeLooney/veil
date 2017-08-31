@@ -300,17 +300,14 @@ const computedProp = function(e: IEntity, name: string, calcFunc: entityGetter, 
   })
 }
 const attachDefaultAttributes = function(e: IEntity) {
-  basicProp(e, 0, '+stam', ['stamina', 'health-max'])
-  basicProp(e, 1, '*stam', ['stamina', 'health-max']) // 137
+  basicProp(e, 0, '+stam:rating', ['stamina', 'health-max'])
+  basicProp(e, 1, '*stam:rating', ['stamina', 'health-max']) // 137
   computedProp(
     e,
     'stamina',
     function(e: IEntity): number {
       //TODO: Fix this Magic Number
-      console.log('+stam:', e.attributes['+stam'])
-      console.log('*stam:', e.attributes['*stam'])
-      console.log('stam:', (6259 + e.attributes['+stam']) * e.attributes['*stam'])
-      return (6259 + e.attributes['+stam']) * e.attributes['*stam']
+      return (6259 + e.attributes['+stam:rating']) * e.attributes['*stam:rating']
     },
     []
   )
@@ -336,10 +333,14 @@ const attachDefaultAttributes = function(e: IEntity) {
     'crit',
     function(e: IEntity): number {
       //TODO: Fix this Magic Number x2
-      return 0.06 + e.attributes['+crit'] + e.attributes['+crit:rating'] * e.attributes['*crit:rating'] / 40000
+      return 0.05 + 0.01 + e.attributes['+crit'] + e.attributes['+crit:rating'] * e.attributes['*crit:rating'] / 40000
     },
     []
   )
+  basicProp(e, 0, '+vers:rating', [])
+  basicProp(e, 0, '+primary:rating', [])
+  basicProp(e, 0, '+str_agi:rating', [])
+  basicProp(e, 0, '+agi_int:rating', [])
 
   computedProp(
     e,
