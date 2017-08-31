@@ -1,5 +1,5 @@
 import { IItem } from '../item'
-import statMappings from '../consts/stat_mappings'
+import statMappings from '../consts/statMappings'
 
 interface armoryStat {
   stat: number
@@ -19,6 +19,8 @@ interface armoryItem {
     }
     weaponSpeed: number
   }
+  artifactId: number
+  artifactTraits: { id: number; rank: number }[]
 }
 interface armoryExport {
   name: string
@@ -72,7 +74,9 @@ function calcItems(src: armoryExport): IItem[] {
       id: x.id,
       slug: x.name,
       slot: i,
-      stats: stats
+      stats: stats,
+      artifactId: x.artifactId,
+      artifactTraits: x.artifactTraits
     })
   }
   return retval

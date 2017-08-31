@@ -8,6 +8,20 @@ interface IFlagSetInstance {
   set(flag: string, bit: boolean): void
   _data: { [key: number]: number }
 }
+const createMappings = function(flags: string[][]) {
+  let groupMapping: IEnum = {}
+  let bitMapping: IEnum = {}
+  for (let group = 0; flags[group] != undefined; group++) {
+    let bit = 1
+    for (let offset = 0; offset < 32; offset++) {
+      let flagName = flags[group][offset]
+      groupMapping[flagName] = group
+      bitMapping[flagName] = bit
+      bit = bit << 1
+    }
+  }
+  return { groupMapping, bitMapping }
+}
 const createFlagSet = function(groupMapping: IEnum, bitMapping: IEnum): IFlagSetInstance {
   let _data = {}
   for (var g in groupMapping) {
@@ -31,4 +45,4 @@ const get = function(flag: string): boolean {
   let value = this.bitMapping[flag]
   return (this._data[group] & value) != 0
 }
-export { IEnum, IFlagSetInstance, createFlagSet }
+export { createMappings, IEnum, IFlagSetInstance, createFlagSet }
