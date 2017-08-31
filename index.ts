@@ -10,6 +10,7 @@ import consts from './src/consts'
 
 const w = new World()
 const e = Object.create(savedya) as IEntity
+w.init(e)
 w.spawn(e)
 console.log('stam:', e.attributes['stamina'])
 console.log('health:', e.attributes['health-max'])

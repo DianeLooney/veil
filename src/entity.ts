@@ -54,6 +54,7 @@ interface IEntity {
   abilities: { [key: string]: IAbility }
   modifiers: IModifier[]
 
+  onInit: ISpawnFunc[]
   onSpawn: ISpawnFunc[]
   onDespawn: ISpawnFunc[]
 
@@ -307,7 +308,7 @@ const attachDefaultAttributes = function(e: IEntity) {
     'stamina',
     function(e: IEntity): number {
       //TODO: Fix this Magic Number
-      return (6259 + e.attributes['+stam:rating']) * e.attributes['*stam:rating']
+      return Math.round((6259 + e.attributes['+stam:rating']) * e.attributes['*stam:rating'])
     },
     []
   )
@@ -397,13 +398,13 @@ const attachDefaultAttributes = function(e: IEntity) {
     []
   )
 
-  basicProp(e, 0, '+armor', [])
-  basicProp(e, 0, '+armor%', [])
+  basicProp(e, 0, '+armor', ['armor', 'armor_dr'])
+  basicProp(e, 0, '*armor', ['armor', 'armor_dr'])
   computedProp(
     e,
     'armor',
     function(e: IEntity): number {
-      return e.attributes['+armor'] * (1 + e.attributes['+armor%'])
+      return e.attributes['+armor'] * e.attributes['*armor']
     },
     ['armor_dr']
   )
@@ -487,6 +488,7 @@ const DefaultEntity: IEntity = {
   abilities: {},
   modifiers: [],
 
+  onInit: [],
   onSpawn: [],
   onDespawn: [],
 
