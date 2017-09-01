@@ -58,21 +58,20 @@ function calcItems(src: armoryExport): IItem[] {
       }
     })
     if (x.armor) {
-      stats['+armor'] = x.armor
-      console.log('+armor:', stats['+armor'])
+      stats['+armor:rating'] = x.armor
     }
     if (i === 'mainHand') {
       if (x.weaponInfo) {
-        stats['+mh:DamageMin'] = x.weaponInfo.damage.exactMin
-        stats['+mh:DamageMax'] = x.weaponInfo.damage.exactMax
-        stats['+mh:Period'] = x.weaponInfo.weaponSpeed
+        stats['+mainHand:damage:min'] = x.weaponInfo.damage.exactMin
+        stats['+mainHand:damage:max'] = x.weaponInfo.damage.exactMax
+        stats['+mainHand:speed'] = x.weaponInfo.weaponSpeed
       }
     }
     if (i === 'offHand') {
       if (x.weaponInfo) {
-        stats['+oh:DamageMin'] = x.weaponInfo.damage.exactMin
-        stats['+oh:DamageMax'] = x.weaponInfo.damage.exactMax
-        stats['+oh:Period'] = x.weaponInfo.weaponSpeed
+        stats['+offHand:damage:min'] = x.weaponInfo.damage.exactMin
+        stats['+offHand:damage:max'] = x.weaponInfo.damage.exactMax
+        stats['+offHand:speed'] = x.weaponInfo.weaponSpeed
       }
     }
     retval.push({

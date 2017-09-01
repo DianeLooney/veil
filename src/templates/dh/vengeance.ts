@@ -2,22 +2,44 @@ import { IEntity, DefaultEntity } from '../../Entity'
 import { IItem } from '../../item'
 import World from '../../world'
 import { IAbility, DefaultAbility, DefaultPassive } from '../../Ability.js'
-import { IModifier } from '../../Modifier.js'
+import { IModifier } from '../../Modifier'
+import { sequence } from '../../rng'
+
 import artifactMappings from '../../consts/artifactMappings'
+
+const spawnFragment = function(w: World, e: IEntity, greater: boolean): void {
+  e.delays.push({
+    when: w.now + w._second * 1.08,
+    func: (w: World, e: IEntity) => {
+      //Spawn fragment here
+    }
+  })
+}
+const consumeFragment = function(w: World, e: IEntity): void {}
 
 const shear = Object.assign(Object.create(DefaultAbility), {
   id: 203782,
   slug: 'shear',
   onCast: [
-    (e: IEntity, t: IEntity) => {
-      /*e.dealDamage({
+    (w: World, e: IEntity, t: IEntity) => {
+      //340% Weapon Damage
+      //+100 Pain
+      //Shatter, if we hit a target
+      w.dealDamage(e, t, {
         source: e,
-        type: 'WEAPON_NORMALIZED',
         target: t,
-        amount: 0,
-        weaponAmount: 3.4
-      })*/
-      //e.gainPower('Pain', 100)
+        type: 'PHYSICAL',
+        mhDamageRaw: 3.4,
+        ability: shear
+      })
+      console.log(t.health)
+      e['pain:current'] += 100
+      if (!e.rng['shear:shatter']) {
+        e.rng['shear:shatter'] = sequence([0.04, 0.12, 0.25, 0.4, 0.6, 0.8, 0.9, 1.0])
+      }
+      if (e.rng['shear:shatter'].next()) {
+        spawnFragment(w, e, false)
+      }
     }
   ]
 })
@@ -25,16 +47,16 @@ const increasedThreat = Object.assign(Object.create(DefaultPassive), {
   id: 189926,
   slug: 'increased-threat',
   attributes: {
-    '+threat': 900
+    '+threat': 9
   }
 })
 const demonicWards = Object.assign(Object.create(DefaultPassive), {
   id: 203513,
   slug: 'demonic-wards',
   attributes: {
-    '*drAll': 0.8,
-    '+attackerCritChance': -0.06,
-    '+expertise': 3,
+    '*dr:all': 0.8,
+    //'+attackerCritChance': -0.06,
+    //'+expertise': 3,
     '*stam:rating': 1.55,
     '*armor': 1.75
   }
@@ -53,16 +75,9 @@ const criticalStrikes = Object.assign(Object.create(DefaultPassive), {
     '+crit': 0.05
   }
 })
-const tempArtifactWorkarounds = Object.assign(Object.create(DefaultPassive), {
-  id: 221351,
-  slug: 'temp-strikes',
-  attributes: {
-    '+crit:rating': 400
-  }
-})
-const belfCritChance = Object.assign(Object.create(DefaultPassive), {
-  id: 221351,
-  slug: 'belf-crit',
+const arcaneAcuity = Object.assign(Object.create(DefaultPassive), {
+  id: 154742,
+  slug: 'arcane-acuity',
   attributes: {
     '+crit': 0.01
   }
@@ -129,7 +144,8 @@ const enchants = Object.assign(Object.create(DefaultPassive), {
 const vengeance = Object.assign(Object.create(DefaultEntity), {
   onInit: [
     function(w: World, e: IEntity) {
-      w.teachAbility(e, belfCritChance)
+      w.teachAbility(e, arcaneAcuity) //TODO: Only load of belfs
+
       w.teachAbility(e, shear)
       w.teachAbility(e, increasedThreat)
       w.teachAbility(e, demonicWards)
@@ -179,6 +195,14 @@ const vengeance = Object.assign(Object.create(DefaultEntity), {
   ]
 })
 
+vengeance._attributes = Object.assign(DefaultEntity._attributes, {
+  ['pain:max:base']: 1000,
+  ['+pain:max']: 0,
+  ['pain:current']: 0,
+  ['pain:max']: function(e) {
+    return e['pain:max:base'] + e['+pain:max']
+  }
+})
 export default vengeance
 
 /*
