@@ -60,13 +60,6 @@ const tempArtifactWorkarounds = Object.assign(Object.create(DefaultPassive), {
     '+crit:rating': 400
   }
 })
-const illidariDurability = Object.assign(Object.create(DefaultPassive), {
-  id: 0,
-  slug: 'illidari-durability',
-  attributes: {
-    //'*stam': 1.1  -- currently broken
-  }
-})
 const belfCritChance = Object.assign(Object.create(DefaultPassive), {
   id: 221351,
   slug: 'belf-crit',
@@ -85,6 +78,15 @@ const artifactTraitsById = {
       }
     })
   },
+  214909: function soulgorger(rank: number): any {
+    return Object.assign(Object.create(DefaultPassive), {
+      id: 214909,
+      slug: 'soulgorger',
+      attributes: {
+        '*armor': 1.1
+      }
+    })
+  }
   211309: function artificialStamina(rank: number): any {
     return Object.assign(Object.create(DefaultPassive), {
       id: 212819,
@@ -133,7 +135,7 @@ const vengeance = Object.assign(Object.create(DefaultEntity), {
       w.teachAbility(e, demonicWards)
       w.teachAbility(e, leatherSpecialization)
       w.teachAbility(e, criticalStrikes)
-      w.teachAbility(e, illidariDurability)
+      //w.teachAbility(e, illidariDurability)
       w.teachAbility(e, enchants)
     }
   ],

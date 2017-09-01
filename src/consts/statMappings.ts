@@ -5,6 +5,7 @@ interface IMapping {
 let map: IMapping = {
   [3]: '+agi:rating',
   [32]: '+crit:rating',
+  [36]: '+haste:rating',
   [40]: '+vers:rating',
   [49]: '+mastery:rating',
   [73]: '+primary:rating',

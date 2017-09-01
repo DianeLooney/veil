@@ -19,6 +19,7 @@ interface armoryItem {
     }
     weaponSpeed: number
   }
+  armor: number
   artifactId: number
   artifactTraits: { id: number; rank: number }[]
 }
@@ -56,6 +57,10 @@ function calcItems(src: armoryExport): IItem[] {
         stats[statMappings[s.stat]] = s.amount
       }
     })
+    if (x.armor) {
+      stats['+armor'] = x.armor
+      console.log('+armor:', stats['+armor'])
+    }
     if (i === 'mainHand') {
       if (x.weaponInfo) {
         stats['+mh:DamageMin'] = x.weaponInfo.damage.exactMin

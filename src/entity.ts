@@ -161,7 +161,7 @@ const attachDefaultAttributes = function(e: IEntity) {
     'haste',
     function(e: any): number {
       //TODO: Fix this Magic Number
-      return e['+haste'] + e['+haste:rating'] * e['*haste:rating'] / 375
+      return e['+haste'] + e['+haste:rating'] * e['*haste:rating'] / 37500
     },
     ['armor_dr']
   )
@@ -262,7 +262,7 @@ const attachDefaultAttributes = function(e: IEntity) {
     e,
     'mast_pct_standard',
     function(e: any): number {
-      return 1.08 + e['+mastery:rating'] / 40000
+      return 0.08 + e['+mastery:rating'] / 40000
     },
     []
   )
@@ -272,7 +272,7 @@ const attachDefaultAttributes = function(e: IEntity) {
     function(e: any): number {
       //TODO: Be an actual number.
       //TODO: Fix Magic Number
-      return e['mast_pct_standard'] * e['agility']
+      return (1 + e['mast_pct_standard']) * e['agility']
     },
     ['normalized_mh_weapon_damage', 'normalized_oh_weapon_damage', 'mh_weapon_dps', 'oh_weapon_dps']
   )
@@ -323,12 +323,12 @@ const attachDefaultAttributes = function(e: IEntity) {
   )
 
   basicProp(e, 0, '+armor', ['armor', 'armor_dr'])
-  basicProp(e, 0, '*armor', ['armor', 'armor_dr'])
+  basicProp(e, 1, '*armor', ['armor', 'armor_dr'])
   computedProp(
     e,
     'armor',
     function(e: any): number {
-      return e['+armor'] * e['*armor']
+      return Math.round(e['+armor'] * e['*armor'])
     },
     ['armor_dr']
   )
@@ -345,7 +345,8 @@ const attachDefaultAttributes = function(e: IEntity) {
     'armor_dr',
     function(e: any): number {
       //mult = 1 / (1 + x / k)
-      return 1 / (1 + e['armor'] / e['armor_k'])
+      //TODO: Fix Magic Number
+      return 1 / (1 + e['armor'] / 7390)
     },
     []
   )
