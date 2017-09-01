@@ -86,7 +86,7 @@ const artifactTraitsById = {
         '*armor': 1.1
       }
     })
-  }
+  },
   211309: function artificialStamina(rank: number): any {
     return Object.assign(Object.create(DefaultPassive), {
       id: 212819,
@@ -135,7 +135,6 @@ const vengeance = Object.assign(Object.create(DefaultEntity), {
       w.teachAbility(e, demonicWards)
       w.teachAbility(e, leatherSpecialization)
       w.teachAbility(e, criticalStrikes)
-      //w.teachAbility(e, illidariDurability)
       w.teachAbility(e, enchants)
     }
   ],
