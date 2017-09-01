@@ -1,6 +1,6 @@
 import { IAbility } from './ability'
 import { IModifier } from './modifier'
-import { attachDefaultAttributes, IEntity } from './entity'
+import { loadAttributes, IEntity } from './entity'
 import { IActor } from './actor'
 import { IItem } from './item'
 import report from './report'
@@ -48,7 +48,7 @@ class World {
     }
   }
   init(e: IEntity): void {
-    attachDefaultAttributes(e)
+    loadAttributes(e)
     e.onInit.forEach(h => h(this, e))
   }
   spawn(e: IEntity): void {

@@ -1,4 +1,4 @@
-/*import { IEntity, DefaultEntity } from './src/entity'
+import { IEntity, DefaultEntity } from './src/entity'
 import World from './src/world.js'
 import { IAbility } from './src/ability.js'
 import { IModifier } from './src/modifier'
@@ -15,26 +15,25 @@ w.spawn(e)
 let dump = function(e: IEntity): void {
   console.log('agi', e['agility'])
   console.log('stam:', e['stamina'])
-  console.log('health:', e['health-max'])
-  console.log('+armor:', e['+armor'])
-  console.log('*armor:', e['*armor'])
-  console.log('armor:', e['armor'])
-  console.log('armor-dr', 100 * (1 - e['armor_dr']))
+  console.log('maxHealth:', e['maxHealth'])
+  console.log('armor:', e['armor:rating'])
+  console.log('armor-dr', 100 * (1 - e['armor']))
   console.log('crit:', e['crit'] * 100)
   console.log('haste:', e['haste'] * 100)
-  console.log('mastery:', e['mast_pct_standard'] * 100)
-  console.log('vers:damage-done:', e['vers:damage-done'])
-  console.log('vers:damage-taken:', e['vers:damage-taken'])
-  console.log('vers:healing-done:', e['vers:healing-done'])
-  console.log('dodge:', e['dodge'])
-  console.log('parry:', e['parry'])
-  console.log('nMHwd:', e['normalized_mh_weapon_damage'])
-  console.log('nOHwd:', e['normalized_oh_weapon_damage'])
+  console.log('mastery:', e['mastery:standard'] * 100)
+  console.log('vers:damage-done:', e['vers:damage-done'] * 100)
+  console.log('vers:damage-taken:', e['vers:damage-taken'] * 100)
+  console.log('vers:healing-done:', e['vers:healing-done'] * 100)
+  console.log('dodge:', e['dodge'] * 100)
+  console.log('parry:', e['parry'] * 100)
+  console.log('nMHwd:', e['mainHand:damage:normalized'])
+  console.log('nOHwd:', e['offHand:damage:normalized'])
 }
 dump(e)
 w.despawn(e)
-*/
+/*
 
-import parser from './src/templates/attributeParser'
-import data from './src/templates/entities/playerAttributes'
-parser.run(data)
+import { parse, build } from './src/templates/attributeParser'
+import data from './src/templates/playerAttributes'
+build(parse(data))
+*/

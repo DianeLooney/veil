@@ -17,6 +17,17 @@ let attributes = {
   ['stamina']: function(e) {
     return Math.round((e['stam:base'] + e['+stam:rating']) * e['*stam:rating'])
   },
+  ['+maxHealth']: 0,
+  ['*maxHealth']: 1,
+  ['stamina:rating:conversion']: 60, //TODO: Magic Number
+  ['maxHealth:base']: function(e) {
+    return e['stamina:rating:conversion'] * e['stamina']
+  },
+  ['maxHealth']: function(e) {
+    //TODO: Fix this magic number
+    let m = Math.round((e['maxHealth:base'] + e['+maxHealth']) * e['*maxHealth'])
+    return m >= 1 ? m : 1
+  },
 
   ['+haste:rating']: 0,
   ['*haste:rating']: 1,
@@ -87,28 +98,44 @@ let attributes = {
   },
   ['+mainHand:damage:min']: 0,
   ['+mainHand:damage:max']: 0,
-  ['mainHand:speed']: 0,
+  ['+mainHand:speed']: 0,
   ['mainHand:damage:normalized']: function(e) {
     return (
       (e['+mainHand:damage:min'] + e['+mainHand:damage:max']) / 2 +
-      (e['mainHand:speed'] || 0) * (1 / 3.5) * e['attackpower']
+      (e['+mainHand:speed'] || 0) * (1 / 3.5) * e['attackpower']
     )
   },
   ['mainHand:damage:dps']: function(e) {
-    return e['mainHand:damage:normalized'] / e['mainHand:speed']
+    return e['+mainHand:speed'] == 0 ? 0 : e['mainHand:damage:normalized'] / e['+mainHand:speed']
   },
   ['+offHand:damage:min']: 0,
   ['+offHand:damage:max']: 0,
-  ['offHand:speed']: 0,
+  ['+offHand:speed']: 0,
   ['offHand:damage:normalized']: function(e) {
     return (
       0.5 *
       ((e['+offHand:damage:min'] + e['+offHand:damage:max']) / 2 +
-        (e['offHand:speed'] || 0) * (1 / 3.5) * e['attackpower'])
+        (e['+offHand:speed'] || 0) * (1 / 3.5) * e['attackpower'])
     )
   },
   ['offHand:damage:dps']: function(e) {
-    return e['offHand:damage:normalized'] / e['offHand:speed']
-  }
+    return e['+offHand:speed'] == 0 ? 0 : e['offHand:damage:normalized'] / e['+offHand:speed']
+  },
+
+  ['+armor:rating']: 0,
+  ['*armor:rating']: 1,
+  ['armor:rating']: function(e) {
+    return Math.round(e['+armor:rating'] * e['*armor:rating'])
+  },
+  ['armor:k']: 7390, //TODO: Magic Number
+  ['armor']: function(e) {
+    //mult = 1 / (1 + x / k)
+    //TODO: Fix Magic Number
+    return 1 / (1 + e['armor:rating'] / e['armor:k'])
+  },
+
+  ['*dr:all']: 1,
+  ['*dr:physical']: 1,
+  ['*dr:Magical']: 1
 }
 export default attributes

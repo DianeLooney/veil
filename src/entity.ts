@@ -4,6 +4,8 @@ import World from './world'
 import { IModifier } from './modifier'
 import { IItem } from './item'
 import consts from './consts'
+import attributes from './templates/playerAttributes'
+import { parse, build } from './templates/attributeParser'
 
 interface IResource {
   current: number
@@ -53,6 +55,7 @@ interface IEntity {
     mainHand: IItem
     offHand: IItem
   }
+  _attributes: any
   _hooks: { [key: string]: IHookFunc[] }
 
   abilities: { [key: string]: IAbility }
@@ -87,95 +90,31 @@ interface setter {
   (value: any): void
 }
 
-const invalidationFunc = function(a: any, k: string, values: string[]): setter {
-  return function(value: number) {
-    a['_' + k] = value
-    values.forEach(x => {
-      a['_' + x] = undefined
-    })
-  }
-}
-const basicProp = function(a: any, def: number, name: string, dependencies: string[]): void {
-  Object.defineProperty(a, name, {
-    get: passthrough(a, name),
-    set: invalidationFunc(a, name, dependencies)
-  })
-  a[name] = def
-}
-
-const passthrough = function(a: any, x: string): getter {
-  return function() {
-    return a['_' + x]
-  }
-}
-const computedProp = function(a: any, name: string, calcFunc: entityGetter, dependencies: string[]) {
-  Object.defineProperty(a, name, {
-    get: function(): number {
-      return calcFunc(a)
-      /*
-      if (a['_' + name] === undefined) {
-        a['_' + name] = calcFunc(a)
-        dependencies.forEach(x => {
-          a['_' + x] = undefined
+const loadAttributes = function(e: IEntity) {
+  let d = build(parse(e._attributes))
+  for (let i in d) {
+    let k = i
+    let r = d[k]
+    switch (typeof r.value) {
+      case 'function':
+        delete e[k]
+        Object.defineProperty(e, k, {
+          get: function() {
+            if (e[`__${k}__`] === undefined) {
+              e[`__${k}__`] = r.value(e)
+            }
+            return e[`__${k}__`]
+          },
+          set: function(v) {
+            console.error(`Unable to set attribute ${k} of ${e.slug}`)
+          }
         })
-      }
-      return a['_' + name]
-      */
+        break
+      default:
+        delete e[k]
+        e[k] = r.value
     }
-  })
-}
-const attachDefaultAttributes = function(e: IEntity) {
-  basicProp(e, 0, '+armor', ['armor', 'armor_dr'])
-  basicProp(e, 1, '*armor', ['armor', 'armor_dr'])
-  computedProp(
-    e,
-    'armor',
-    function(e: any): number {
-      return Math.round(e['+armor'] * e['*armor'])
-    },
-    ['armor_dr']
-  )
-  computedProp(
-    e,
-    'armor_k',
-    function(e: any): number {
-      return consts('armor-k', e.level)
-    },
-    ['armor_dr']
-  )
-  computedProp(
-    e,
-    'armor_dr',
-    function(e: any): number {
-      //mult = 1 / (1 + x / k)
-      //TODO: Fix Magic Number
-      return 1 / (1 + e['armor'] / 7390)
-    },
-    []
-  )
-
-  basicProp(e, 0, '+espertiseRating', [])
-  basicProp(e, 0, '+expertise', [])
-  basicProp(e, 0, '+attackerCritChance', [])
-  basicProp(e, 1, '*drAll', [])
-  basicProp(e, 1, '*drPhysical', [])
-  basicProp(e, 1, '*drMagical', [])
-  basicProp(e, 0, '+maxHealth%', ['health-max'])
-  basicProp(e, 1, '*maxHealth', ['health-max'])
-
-  computedProp(
-    e,
-    'health-max',
-    function(e: any): number {
-      //TODO: Fix this magic number
-      let m = Math.floor(60 * e['stamina'] * (1 + e['+maxHealth%']) * e['*maxHealth'])
-      if (m < 0) {
-        return 1
-      }
-      return m
-    },
-    []
-  )
+  }
 }
 const DefaultEntity: IEntity = {
   id: 0,
@@ -184,6 +123,7 @@ const DefaultEntity: IEntity = {
   level: 1,
   health: 100,
   alive: true,
+  _attributes: attributes,
   _hooks: {
     TakingMeleeWhiteDamage: [],
     TakingMeleeYellowDamage: [],
@@ -226,4 +166,4 @@ const DefaultEntity: IEntity = {
 
 export { IEntity }
 
-export { attachDefaultAttributes, DefaultEntity }
+export { loadAttributes, DefaultEntity }
