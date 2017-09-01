@@ -105,8 +105,25 @@ const artifactTraitsById = {
         //TODO: Pet damage done
       }
     })
+  },
+  207343: function aldrachiDesign(rank: number): any {
+    return Object.assign(Object.create(DefaultPassive), {
+      id: 207343,
+      slug: 'aldrachi-design',
+      attributes: {
+        '+parry': 0.04
+      }
+    })
   }
 }
+const enchants = Object.assign(Object.create(DefaultPassive), {
+  id: -1,
+  slug: 'enchants-temporary',
+  attributes: {
+    '+agi:rating': 400,
+    '+crit:rating': 400
+  }
+})
 const vengeance = Object.assign(Object.create(DefaultEntity), {
   onInit: [
     function(w: World, e: IEntity) {
@@ -117,6 +134,7 @@ const vengeance = Object.assign(Object.create(DefaultEntity), {
       w.teachAbility(e, leatherSpecialization)
       w.teachAbility(e, criticalStrikes)
       w.teachAbility(e, illidariDurability)
+      w.teachAbility(e, enchants)
     }
   ],
   onEquipItem: [

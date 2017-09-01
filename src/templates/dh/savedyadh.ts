@@ -743,6 +743,22 @@ let x = {
     }
   },
   totalHonorableKills: 105
-}
+} /*
+delete x.items.head
+delete x.items.neck
+delete x.items.shoulder
+delete x.items.back
+delete x.items.chest
+delete x.items.wrist
+delete x.items.hands
+delete x.items.waist
+delete x.items.legs
+delete x.items.feet
+delete x.items.finger1
+delete x.items.finger2
+delete x.items.trinket1
+delete x.items.trinket2
+delete x.items.mainHand
+delete x.items.offHand*/
 
 export default x as any

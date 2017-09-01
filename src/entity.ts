@@ -133,6 +133,21 @@ const attachDefaultAttributes = function(e: IEntity) {
     },
     []
   )
+  basicProp(e, 0, '+primary:rating', ['agility'])
+  basicProp(e, 0, '+str_agi:rating', ['agility'])
+  basicProp(e, 0, '+agi_int:rating', ['agility'])
+  basicProp(e, 0, '+agi:rating', ['agility'])
+  basicProp(e, 1, '*agi:rating', ['agility'])
+  computedProp(
+    e,
+    'agility',
+    function(e: any): number {
+      //TODO: Only increase agi for agi primary users
+      //TODO: Remove this magic number
+      return 9027 + e['+primary:rating'] + e['+str_agi:rating'] + e['+agi_int:rating'] + e['+agi:rating']
+    },
+    []
+  )
 
   basicProp(e, 0, '+haste:rating', ['haste'])
   basicProp(e, 1, '*haste:rating', ['haste'])
@@ -147,22 +162,49 @@ const attachDefaultAttributes = function(e: IEntity) {
     ['armor_dr']
   )
 
-  basicProp(e, 0, '+crit:rating', ['crit'])
-  basicProp(e, 1, '*crit:rating', ['crit'])
+  basicProp(e, 0, '+crit:rating', ['crit', 'parry:pre-dr', 'parry'])
+  basicProp(e, 1, '*crit:rating', ['crit', 'parry:pre-dr', 'parry'])
   basicProp(e, 0, '+crit', ['crit'])
+  computedProp(
+    e,
+    'crit:rating',
+    function(e: any): number {
+      return e['+crit:rating'] * e['*crit:rating']
+    },
+    ['parry']
+  )
   computedProp(
     e,
     'crit',
     function(e: any): number {
       //TODO: Fix this Magic Number x2
-      return 0.05 + 0.01 + e['+crit'] + e['+crit:rating'] * e['*crit:rating'] / 40000
+      return 0.05 + e['+crit'] + e['crit:rating'] / 40000
+    },
+    []
+  )
+  computedProp(
+    e,
+    'parry:pre-dr',
+    function(e: any): number {
+      //TODO: Fix this Magic Number
+      return e['crit:rating'] / 51500
+    },
+    ['parry']
+  )
+  basicProp(e, 0.03, 'parry:base', ['parry'])
+  basicProp(e, 0, '+parry', ['parry'])
+  computedProp(
+    e,
+    'parry',
+    function(e: any): number {
+      //TODO: Fix this Magic Number x
+      // Taken from http://www.askmrrobot.com/wow/theory/mechanic/stat/parry?spec=DemonHunterVengeance&version=live
+      // And from http://www.askmrrobot.com/wow/theory/mechanic/function/diminishavoidance?spec=DemonHunterVengeance&version=live
+      return e['parry:base'] + e['+parry'] + e['parry:pre-dr'] / (e['parry:pre-dr'] * 3.15 + 1 / 0.94)
     },
     []
   )
   basicProp(e, 0, '+vers:rating', [])
-  basicProp(e, 0, '+primary:rating', [])
-  basicProp(e, 0, '+str_agi:rating', [])
-  basicProp(e, 0, '+agi_int:rating', [])
 
   computedProp(
     e,
