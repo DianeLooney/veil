@@ -111,6 +111,8 @@ const passthrough = function(a: any, x: string): getter {
 const computedProp = function(a: any, name: string, calcFunc: entityGetter, dependencies: string[]) {
   Object.defineProperty(a, name, {
     get: function(): number {
+      return calcFunc(a)
+      /*
       if (a['_' + name] === undefined) {
         a['_' + name] = calcFunc(a)
         dependencies.forEach(x => {
@@ -118,6 +120,7 @@ const computedProp = function(a: any, name: string, calcFunc: entityGetter, depe
         })
       }
       return a['_' + name]
+      */
     }
   })
 }
@@ -138,13 +141,14 @@ const attachDefaultAttributes = function(e: IEntity) {
   basicProp(e, 0, '+agi_int:rating', ['agility'])
   basicProp(e, 0, '+agi:rating', ['agility'])
   basicProp(e, 1, '*agi:rating', ['agility'])
+  basicProp(e, 9027, 'agility:base', [])
   computedProp(
     e,
     'agility',
     function(e: any): number {
       //TODO: Only increase agi for agi primary users
       //TODO: Remove this magic number
-      return 9027 + e['+primary:rating'] + e['+str_agi:rating'] + e['+agi_int:rating'] + e['+agi:rating']
+      return e['agility:base'] + e['+primary:rating'] + e['+str_agi:rating'] + e['+agi_int:rating'] + e['+agi:rating']
     },
     []
   )
@@ -191,6 +195,25 @@ const attachDefaultAttributes = function(e: IEntity) {
     },
     ['parry']
   )
+  basicProp(e, 0.03, 'dodge:base', [])
+  basicProp(e, 0, '+dodge', [])
+  computedProp(
+    e,
+    'dodge:pre-dr',
+    function(e: any): number {
+      //TODO: Fix this Magic Number
+      return (e['agility'] - e['agility:base']) / 131102
+    },
+    []
+  )
+  computedProp(
+    e,
+    'dodge',
+    function(e: any): number {
+      return e['dodge:base'] + e['+dodge'] + e['dodge:pre-dr'] / (e['dodge:pre-dr'] * 3.15 + 1 / 0.94)
+    },
+    []
+  )
   basicProp(e, 0.03, 'parry:base', ['parry'])
   basicProp(e, 0, '+parry', ['parry'])
   computedProp(
@@ -205,13 +228,27 @@ const attachDefaultAttributes = function(e: IEntity) {
     []
   )
   basicProp(e, 0, '+vers:rating', [])
-
+  basicProp(e, 0, '+mastery:rating', [
+    'normalized_mh_weapon_damage',
+    'normalized_oh_weapon_damage',
+    'mh_weapon_dps',
+    'oh_weapon_dps'
+  ])
+  computedProp(
+    e,
+    'mast_pct_standard',
+    function(e: any): number {
+      return 1.08 + e['+mastery:rating'] / 40000
+    },
+    []
+  )
   computedProp(
     e,
     'attack_power',
     function(e: any): number {
       //TODO: Be an actual number.
-      return 0
+      //TODO: Fix Magic Number
+      return e['mast_pct_standard'] * e['agility']
     },
     ['normalized_mh_weapon_damage', 'normalized_oh_weapon_damage', 'mh_weapon_dps', 'oh_weapon_dps']
   )
