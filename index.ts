@@ -10,6 +10,7 @@ import consts from './src/consts'
 
 const w = new World()
 const e = Object.create(savedya) as IEntity
+
 w.init(e)
 w.spawn(e)
 let dump = function(e: IEntity): void {
@@ -28,8 +29,14 @@ let dump = function(e: IEntity): void {
   console.log('parry:', e['parry'] * 100)
   console.log('nMHwd:', e['mainHand:damage:normalized'])
   console.log('nOHwd:', e['offHand:damage:normalized'])
+  console.log('maxPain', e['pain:max'] / 10)
 }
 dump(e)
+while (w.now < w._second * 3) {
+  w.tick()
+  w.castAbilityByName(e, 'shear', e)
+}
+
 w.despawn(e)
 /*
 

@@ -3,13 +3,13 @@ import { IActor } from '../../actor'
 import World from '../../World'
 
 interface IActorSpammy extends IActor {
-  attach(e: IEntity, s: string): void
+  attach(w: World, e: IEntity, s: string): void
 }
 
 const SpammyTemplate: IActorSpammy = {
-  attach(e: IEntity, s: string): void {
+  attach(w: World, e: IEntity, s: string): void {
     this.act = function(w: World): void {
-      //e.castAbility(s)
+      e.castAbility(s)
     }
   },
   act(w: World): void {}

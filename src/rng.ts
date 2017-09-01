@@ -2,6 +2,7 @@ interface IRngSource {
   next(...outcomes: number[]): number
   reset(): void
 }
+export { IRngSource }
 
 const deckOfCards = function(cards: number, goodCards: number) {
   let total: number = cards
@@ -27,5 +28,25 @@ const deckOfCards = function(cards: number, goodCards: number) {
     }
   }
 }
-
 export { deckOfCards }
+const sequence = function(chances: number[]) {
+  let i = 0
+  return {
+    next(): number {
+      if (i >= chances.length) {
+        i = 0
+      }
+      let c = chances[i]
+      if (Math.random() <= c) {
+        i = 0
+        return 1
+      }
+      i++
+      return 0
+    },
+    reset(): void {
+      i = 0
+    }
+  }
+}
+export { sequence }

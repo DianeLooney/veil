@@ -9,7 +9,7 @@ class World {
   _second: number
   _tickDelta: number
 
-  time: number
+  now: number
   entities: IEntity[]
   actors: IActor[]
   key: Symbol
@@ -18,9 +18,9 @@ class World {
   constructor(...template) {
     this.slug = ''
     this._second = 1000
-    this._tickDelta = 50
+    this._tickDelta = 40
 
-    this.time = 0
+    this.now = 0
     this.entities = []
     this.actors = []
 
@@ -28,15 +28,28 @@ class World {
     this.key = Symbol('world:' + this.slug)
   }
   tick(): void {
-    this.time += this._tickDelta
+    this.now += this._tickDelta
+    this.entities.forEach(e => {
+      if (e['gcd:remaining'] !== undefined && e['gcd:remaining'] > 0) {
+        e['gcd:remaining'] -= this._tickDelta
+      }
+    })
     this.entities.forEach(e => {
       e.modifiers.forEach(m => {
         m.tick(this)
       })
     })
+    this.entities.forEach(e => {
+      e.delays.forEach(d => {
+        if (d.when <= this.now) {
+          d.func(this, e)
+        }
+      })
+    })
     this.actors.forEach(a => {
       a.act(this)
     })
+    report('WORLD_TICKED', { time: this.now / this._second })
   }
   attachActor(a: IActor): void {
     this.actors.push(a)
@@ -53,6 +66,7 @@ class World {
   }
   spawn(e: IEntity): void {
     this.entities.push(e)
+    e.health = e['maxHealth']
     e.onSpawn.forEach(h => h(this, e))
     report('ENTITY_SPAWNED', { entity: e })
   }
@@ -122,17 +136,29 @@ class World {
   castAbilityByName(e: IEntity, slug: string, ...targets: IEntity[]): void {
     let a = e.abilities[slug]
     if (a) {
-      a.cast(...targets)
+      a.cast(this, ...targets)
     } else {
       //TODO: some error message
     }
   }
   dealDamage(e: IEntity, t: IEntity, args: any): void {
-    let a: number = args.amount
+    let a: number = 0
     switch (args.type) {
       case 'PHYSICAL':
-        //a += args.source.attributes['normalized_mh_weapon_damage']
-        //a += args.source.attributes['normalized_oh_weapon_damage']
+        let s: IEntity = args.source
+        if (args.mhDamageNorm) {
+          a += s['mainHand:damage:normalized'] * args.mhDamageNorm
+        }
+        if (args.ohDamageNorm) {
+          a += s['offHand:damage:normalized'] * args.ohDamageNorm
+        }
+        if (args.mhDamageRaw) {
+          a += args.mhDamageRaw * (s['+mainHand:damage:min'] + Math.random() * (s['+mainHand:damage:max'] - s['+mainHand:damage:min']))
+        }
+        if (args.ohDamageRaw) {
+          a += 0.5 * args.ohDamageRaw * (s['+offHand:damage:min'] + Math.random() * (s['+offHand:damage:max'] - s['+offHand:damage:min']))
+        }
+
         break
       default:
         report('ERROR', {
@@ -141,7 +167,8 @@ class World {
         })
         return
     }
-
+    args.amount = a
+    console.log('amount:', a)
     let dr: number = 1
     if (args.type == 'PHYSICAL' || args.type == 'SWING') {
       dr *= t['*drPhysical']
@@ -155,13 +182,13 @@ class World {
     } else {
       t.health = 0
       report('DAMAGE_TAKEN', args)
-      this.kill(args.source)
+      this.kill(args.source, args.ability)
     }
   }
-  kill(e: IEntity): void {
+  kill(e: IEntity, a: IAbility): void {
     e.alive = false
     e.health = 0
-    report('ENTITY_DIED', { unit: e, killingBlow: null })
+    report('ENTITY_DIED', { unit: e, killingBlow: a })
   }
   teachAbility(e: IEntity, a: IAbility): void {
     if (!e.abilities[a.slug]) {

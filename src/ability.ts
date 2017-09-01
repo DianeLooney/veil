@@ -1,5 +1,7 @@
 import { IEntity, DefaultEntity } from './Entity'
 import World from './World'
+import report from './report'
+
 interface ILearnFunc {
   (w: World, e: IEntity): void
 }
@@ -22,7 +24,7 @@ interface IAbility {
   triggerCooldown(e: IEntity): void
   learn: ILearnFunc
   unlearn: ILearnFunc
-  cast(...targets: IEntity[]): void
+  cast(w: World, ...targets: IEntity[]): void
 }
 const triggerCooldown = function(e: IEntity): void {
   //e[this.key].cooldown = this.cooldown
@@ -34,8 +36,15 @@ const activeLearn = function(w: World, e: IEntity): void {
 const activeUnlearn = function(w: World, e: IEntity): void {
   this.onUnlearn.forEach(h => h(e))
 }
-const activeCast = function(...targets: IEntity[]): void {
-  targets.forEach(t => this.onCast.forEach(h => h(this.host, t)))
+const activeCast = function(w: World, ...targets: IEntity[]): void {
+  if (this.onGCD && this.host.isOnGCD()) {
+    return
+  }
+  targets.forEach(t => this.onCast.forEach(h => h(w, this.host, t)))
+  if (this.triggersGCD) {
+    this.host.triggerGCD()
+  }
+  report('ABILITY_CASTED', {})
 }
 
 const DefaultAbility: IAbility = {
@@ -68,7 +77,7 @@ const passiveUnlearn = function(w: World, e: IEntity): void {
     w.loseAttribute(e, a, this.attributes[a])
   }
 }
-const passiveCast = function(...target: IEntity[]): void {}
+const passiveCast = function(w: World, ...target: IEntity[]): void {}
 
 const DefaultPassive: IAbility = {
   id: 0,

@@ -6,7 +6,7 @@ import { IItem } from './item'
 import consts from './consts'
 import attributes from './templates/playerAttributes'
 import { parse, build } from './templates/attributeParser'
-
+import { IRngSource } from './rng'
 interface IResource {
   current: number
   max: number
@@ -19,6 +19,9 @@ interface ISpawnFunc {
 }
 interface IItemFunc {
   (w: World, e: IEntity, i: IItem, slot: string): void
+}
+interface IDelayFunc {
+  (w: World, e: IEntity): void
 }
 interface DamageEvent {
   source: IEntity
@@ -57,7 +60,7 @@ interface IEntity {
   }
   _attributes: any
   _hooks: { [key: string]: IHookFunc[] }
-
+  rng: { [key: string]: IRngSource }
   abilities: { [key: string]: IAbility }
   modifiers: IModifier[]
 
@@ -68,16 +71,16 @@ interface IEntity {
   onEquipItem: IItemFunc[]
   onUnequipItem: IItemFunc[]
 
-  _gcdRemaining: number
+  delays: { when: number; func: IDelayFunc }[]
 
   triggerGCD(): void
   isOnGCD(): boolean
 }
 const triggerGCD = function(): void {
-  this._gcdRemaining = 1.5
+  this['gcd:remaining'] = this['gcd:time']
 }
 const isOnGCD = function(): boolean {
-  return this._gcdRemaining > 0
+  return this['gcd:remaining'] > 0
 }
 
 interface getter {
@@ -158,7 +161,8 @@ const DefaultEntity: IEntity = {
   onDespawn: [],
   onEquipItem: [],
   onUnequipItem: [],
-  _gcdRemaining: 0,
+  delays: [],
+  rng: {},
 
   triggerGCD,
   isOnGCD

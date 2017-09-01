@@ -100,10 +100,7 @@ let attributes = {
   ['+mainHand:damage:max']: 0,
   ['+mainHand:speed']: 0,
   ['mainHand:damage:normalized']: function(e) {
-    return (
-      (e['+mainHand:damage:min'] + e['+mainHand:damage:max']) / 2 +
-      (e['+mainHand:speed'] || 0) * (1 / 3.5) * e['attackpower']
-    )
+    return (e['+mainHand:damage:min'] + e['+mainHand:damage:max']) / 2 + (e['+mainHand:speed'] || 0) * (1 / 3.5) * e['attackpower']
   },
   ['mainHand:damage:dps']: function(e) {
     return e['+mainHand:speed'] == 0 ? 0 : e['mainHand:damage:normalized'] / e['+mainHand:speed']
@@ -112,11 +109,7 @@ let attributes = {
   ['+offHand:damage:max']: 0,
   ['+offHand:speed']: 0,
   ['offHand:damage:normalized']: function(e) {
-    return (
-      0.5 *
-      ((e['+offHand:damage:min'] + e['+offHand:damage:max']) / 2 +
-        (e['+offHand:speed'] || 0) * (1 / 3.5) * e['attackpower'])
-    )
+    return 0.5 * ((e['+offHand:damage:min'] + e['+offHand:damage:max']) / 2 + (e['+offHand:speed'] || 0) * (1 / 3.5) * e['attackpower'])
   },
   ['offHand:damage:dps']: function(e) {
     return e['+offHand:speed'] == 0 ? 0 : e['offHand:damage:normalized'] / e['+offHand:speed']
@@ -136,6 +129,15 @@ let attributes = {
 
   ['*dr:all']: 1,
   ['*dr:physical']: 1,
-  ['*dr:Magical']: 1
+  ['*dr:Magical']: 1,
+
+  ['+threat']: 1,
+
+  ['gcd:base']: 1500,
+  ['gcd:min']: 1000,
+  ['gcd:time']: function(e) {
+    return Math.max(e['gcd:min'], e['gcd:base'] / (1.0 + e['haste']))
+  },
+  ['gcd:remaining']: 0
 }
 export default attributes
