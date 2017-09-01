@@ -1,4 +1,4 @@
-import { IEntity, DefaultEntity } from './src/entity'
+/*import { IEntity, DefaultEntity } from './src/entity'
 import World from './src/world.js'
 import { IAbility } from './src/ability.js'
 import { IModifier } from './src/modifier'
@@ -33,3 +33,8 @@ let dump = function(e: IEntity): void {
 }
 dump(e)
 w.despawn(e)
+*/
+
+import parser from './src/templates/attributeParser'
+import data from './src/templates/entities/playerAttributes'
+parser.run(data)
