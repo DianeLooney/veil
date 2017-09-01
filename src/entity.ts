@@ -228,6 +228,30 @@ const attachDefaultAttributes = function(e: IEntity) {
     []
   )
   basicProp(e, 0, '+vers:rating', [])
+  computedProp(
+    e,
+    'vers:damage-done',
+    function(e: any): number {
+      return e['+vers:rating'] / 47500
+    },
+    []
+  )
+  computedProp(
+    e,
+    'vers:healing-done',
+    function(e: any): number {
+      return e['+vers:rating'] / 47500
+    },
+    []
+  )
+  computedProp(
+    e,
+    'vers:damage-taken',
+    function(e: any): number {
+      return e['+vers:rating'] / 95000
+    },
+    []
+  )
   basicProp(e, 0, '+mastery:rating', [
     'normalized_mh_weapon_damage',
     'normalized_oh_weapon_damage',

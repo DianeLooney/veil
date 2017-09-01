@@ -23,6 +23,9 @@ let dump = function(e: IEntity): void {
   console.log('dodge:base', e['dodge:base'])
   console.log('dodge:pre-dr', e['dodge:pre-dr'])
   console.log('dodge:', e['dodge'])
+  console.log('vers:damage-done:', e['vers:damage-done'])
+  console.log('vers:damage-taken:', e['vers:damage-taken'])
+  console.log('vers:healing-done:', e['vers:healing-done'])
   console.log('nMHwd:', e['normalized_mh_weapon_damage'])
   console.log('nOHwd:', e['normalized_oh_weapon_damage'])
 }
