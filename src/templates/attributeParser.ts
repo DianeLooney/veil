@@ -12,6 +12,15 @@ function parse(data: any) {
           value: val
         })
         break
+      case 'object':
+        if (val instanceof Array) {
+          depList.push({
+            key: key,
+            parents: [],
+            value: val
+          })
+        }
+        break
       case 'function':
         let d = babylon.parse('export default ' + val.toString(), { sourceType: 'module' })
         let prev = null
@@ -46,11 +55,7 @@ function build(depList: { value: any; key: string; parents: string[] }[]) {
   depList.forEach(x => {
     attrs[x.key] = { value: x.value, parents: x.parents, children: new Set() }
   })
-  let markChild = function(
-    attrs: { [key: string]: { parents: string[]; children: Set<string> } },
-    key: string,
-    val: string
-  ) {
+  let markChild = function(attrs: { [key: string]: { parents: string[]; children: Set<string> } }, key: string, val: string) {
     attrs[key].children.add(val)
     attrs[key].parents.forEach(p => {
       markChild(attrs, p, val)

@@ -40,10 +40,12 @@ class World {
       })
     })
     this.entities.forEach(e => {
-      e.delays.forEach(d => {
+      e.delays = e.delays.filter(d => {
         if (d.when <= this.now) {
           d.func(this, e)
+          return false
         }
+        return true
       })
     })
     this.actors.forEach(a => {
@@ -141,10 +143,14 @@ class World {
       //TODO: some error message
     }
   }
+  castAbilityByReference(e: IEntity, a: IAbility, ...targets: IEntity[]): void {
+    a.cast(this, ...targets)
+  }
   dealDamage(e: IEntity, t: IEntity, args: any): void {
     let a: number = 0
     switch (args.type) {
       case 'PHYSICAL':
+      case 'FIRE':
         let s: IEntity = args.source
         if (args.mhDamageNorm) {
           a += s['mainHand:damage:normalized'] * args.mhDamageNorm
@@ -152,12 +158,15 @@ class World {
         if (args.ohDamageNorm) {
           a += s['offHand:damage:normalized'] * args.ohDamageNorm
         }
+        if (args.attackPower) {
+          a += s['attackpower'] * args.attackPower
+        } /*
         if (args.mhDamageRaw) {
           a += args.mhDamageRaw * (s['+mainHand:damage:min'] + Math.random() * (s['+mainHand:damage:max'] - s['+mainHand:damage:min']))
         }
         if (args.ohDamageRaw) {
           a += 0.5 * args.ohDamageRaw * (s['+offHand:damage:min'] + Math.random() * (s['+offHand:damage:max'] - s['+offHand:damage:min']))
-        }
+        }*/
 
         break
       default:
@@ -168,22 +177,49 @@ class World {
         return
     }
     args.amount = a
-    console.log('amount:', a)
-    let dr: number = 1
+    if (!args.critDisabled) {
+      if (Math.random() <= args.source['crit']) {
+        args.amount *= 2
+        args.didCrit = true
+      }
+    }
+    let dr: number = t['*dr:all']
     if (args.type == 'PHYSICAL' || args.type == 'SWING') {
-      dr *= t['*drPhysical']
+      dr *= t['*dr:physical']
+      dr *= t['armor']
     } else {
-      dr *= t['*drMagical']
+      dr *= t['*dr:magical']
     }
     args.amount *= dr
+
+    args.amount = Math.round(args.amount)
+
     if (t.health > args.amount) {
       t.health -= args.amount
+      console.log(args.amount)
       report('DAMAGE_TAKEN', args)
     } else {
       t.health = 0
       report('DAMAGE_TAKEN', args)
+      console.log(args.amount)
       this.kill(args.source, args.ability)
     }
+  }
+  applyHeal(e: IEntity, t: IEntity, args: any): void {
+    args.source = e
+    args.target = t
+    if (args.attackPower) {
+      args.amount += args.attackPower * e['attackpower'] * e['vers:healing-done']
+    }
+
+    args.amount = Math.round(args.amount)
+
+    if (t.health + args.amount > t['maxHealth']) {
+      t.health = t['maxHealth']
+    } else {
+      t.health += args.amount
+    }
+    report('HEALING_DONE', args)
   }
   kill(e: IEntity, a: IAbility): void {
     e.alive = false

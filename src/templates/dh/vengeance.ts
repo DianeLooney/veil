@@ -4,18 +4,42 @@ import World from '../../world'
 import { IAbility, DefaultAbility, DefaultPassive } from '../../Ability.js'
 import { IModifier } from '../../Modifier'
 import { sequence } from '../../rng'
+import report from '../../report'
 
 import artifactMappings from '../../consts/artifactMappings'
-
+const soulFragmentConsume = Object.assign(Object.create(DefaultPassive), {
+  id: 204255,
+  slug: 'soul-fragment-consume'
+})
+const soulFragmentSpawn = Object.assign(Object.create(DefaultPassive), {
+  id: 204255,
+  slug: 'soul-fragment-spawn'
+})
 const spawnFragment = function(w: World, e: IEntity, greater: boolean): void {
   e.delays.push({
     when: w.now + w._second * 1.08,
     func: (w: World, e: IEntity) => {
-      //Spawn fragment here
+      if (e['fragment:expiration:time'].length >= 5) {
+        consumeFragment(w, e, 1)
+
+        //TODO: Handle greater fragments
+      }
+      e['fragment:expiration:time'].push(w.now + w._second * 20)
+      e['fragment:count'] += 1
+      report('ABILITY_CASTED', { entity: e, spell: soulFragmentSpawn })
     }
   })
 }
-const consumeFragment = function(w: World, e: IEntity): void {}
+const consumeFragment = function(w: World, e: IEntity, count: number): void {
+  for (let i = 0; i < count; i++) {
+    e['fragment:expiration:time'].shift()
+    e['fragment:count'] -= 1
+    w.applyHeal(e, e, {
+      attackPower: 2.5,
+      spell: soulFragmentConsume
+    })
+  }
+}
 
 const shear = Object.assign(Object.create(DefaultAbility), {
   id: 203782,
@@ -24,22 +48,97 @@ const shear = Object.assign(Object.create(DefaultAbility), {
     (w: World, e: IEntity, t: IEntity) => {
       //340% Weapon Damage
       //+100 Pain
-      //Shatter, if we hit a target
+      //Shatter
+
       w.dealDamage(e, t, {
         source: e,
         target: t,
         type: 'PHYSICAL',
-        mhDamageRaw: 3.4,
+        mhDamageNorm: 3.4 * e['*vengeance:damage'] * e['damage'] * (1 + e['+shear:damage']),
         ability: shear
       })
-      console.log(t.health)
+
       e['pain:current'] += 100
+
       if (!e.rng['shear:shatter']) {
         e.rng['shear:shatter'] = sequence([0.04, 0.12, 0.25, 0.4, 0.6, 0.8, 0.9, 1.0])
       }
       if (e.rng['shear:shatter'].next()) {
         spawnFragment(w, e, false)
       }
+    }
+  ]
+})
+const fracture = Object.assign(Object.create(DefaultAbility), {
+  id: 209795,
+  slug: 'fracture',
+  cost: {
+    'pain:current': 300
+  },
+  onCast: [
+    (w: World, e: IEntity, t: IEntity) => {
+      w.castAbilityByReference(e, fractureMainHand, t)
+      e.delays.push({
+        when: w.now + 0.125 * w._second,
+        func: (w: World, e: IEntity): void => {
+          w.castAbilityByReference(e, fractureOffHand, t)
+        }
+      })
+    }
+  ]
+})
+const fractureMainHand = Object.assign(Object.create(DefaultAbility), {
+  id: 225919,
+  slug: 'fracture-mh',
+  onGCD: false,
+  triggersGCD: false,
+  onCast: [
+    (w: World, e: IEntity, t: IEntity) => {
+      w.dealDamage(e, t, {
+        source: e,
+        target: t,
+        type: 'PHYSICAL',
+        mhDamageNorm: 4.51 * e['damage'],
+        ability: fractureMainHand
+      })
+      spawnFragment(w, e, false)
+    }
+  ]
+})
+const fractureOffHand = Object.assign(Object.create(DefaultAbility), {
+  id: 225921,
+  slug: 'fracture-oh',
+  onGCD: false,
+  triggersGCD: false,
+  onCast: [
+    (w: World, e: IEntity, t: IEntity) => {
+      w.dealDamage(e, t, {
+        source: e,
+        target: t,
+        type: 'PHYSICAL',
+        ohDamageNorm: 8.97 * e['*vengeance:damage'] * e['damage'],
+        ability: fractureMainHand
+      })
+      spawnFragment(w, e, false)
+    }
+  ]
+})
+const spiritBomb = Object.assign(Object.create(DefaultAbility), {
+  slug: 'spirit-bomb',
+  requires: {
+    ['fragment:count']: 1
+  },
+  onCast: [
+    (w: World, e: IEntity, t: IEntity) => {
+      let x = e['fragment:count']
+      consumeFragment(w, e, x)
+      w.dealDamage(e, t, {
+        source: e,
+        target: t,
+        type: 'FIRE',
+        attackPower: 1.8 * x * e['damage'],
+        ability: spiritBomb
+      })
     }
   ]
 })
@@ -82,7 +181,6 @@ const arcaneAcuity = Object.assign(Object.create(DefaultPassive), {
     '+crit': 0.01
   }
 })
-
 const artifactTraitsById = {
   212819: function willOfTheIllidari(rank: number): any {
     return Object.assign(Object.create(DefaultPassive), {
@@ -111,13 +209,24 @@ const artifactTraitsById = {
       }
     })
   },
+  226829: function artificialDamage(rank: number): any {
+    return Object.assign(Object.create(DefaultPassive), {
+      id: 212819,
+      slug: 'artificial-damage',
+      attributes: {
+        //'*damage': 1.0 + 0.0075 * rank
+        //'*damage': 1.0 + 0.01 * Math.min(rank, 52) + 0.00075 * Math.max(0, rank - 52)
+        '*damage': 1.0 + 0.0075 * Math.min(rank, 52) + 0.00075 * Math.max(0, rank - 52)
+      }
+    })
+  },
   241091: function illidariDurability(rank: number): any {
     return Object.assign(Object.create(DefaultPassive), {
       id: 212819,
       slug: 'illidari-durability',
       attributes: {
         //currently bugged: '*stam:rating': 1.1
-        //TODO: Damage Done
+        '*damage': 1.1,
         '*armor': 1.2
         //TODO: Pet damage done
       }
@@ -147,6 +256,11 @@ const vengeance = Object.assign(Object.create(DefaultEntity), {
       w.teachAbility(e, arcaneAcuity) //TODO: Only load of belfs
 
       w.teachAbility(e, shear)
+      w.teachAbility(e, fracture)
+      w.teachAbility(e, spiritBomb)
+
+      w.teachAbility(e, fractureMainHand)
+      w.teachAbility(e, fractureOffHand)
       w.teachAbility(e, increasedThreat)
       w.teachAbility(e, demonicWards)
       w.teachAbility(e, leatherSpecialization)
@@ -168,6 +282,7 @@ const vengeance = Object.assign(Object.create(DefaultEntity), {
           }
         })
         w.teachAbility(e, artifactTraitsById[211309](totalRanks))
+        w.teachAbility(e, artifactTraitsById[226829](totalRanks))
       }
     }
   ],
@@ -185,14 +300,11 @@ const vengeance = Object.assign(Object.create(DefaultEntity), {
           }
         })
         w.unteachAbility(e, artifactTraitsById[211309](totalRanks))
+        w.unteachAbility(e, artifactTraitsById[226829](totalRanks))
       }
     }
   ],
-  onSpawn: [
-    (w: World, e: IEntity) => {
-      //e.learnPower('Pain', 0, 1000)
-    }
-  ]
+  onSpawn: [(w: World, e: IEntity) => {}]
 })
 
 vengeance._attributes = Object.assign(DefaultEntity._attributes, {
@@ -201,6 +313,14 @@ vengeance._attributes = Object.assign(DefaultEntity._attributes, {
   ['pain:current']: 0,
   ['pain:max']: function(e) {
     return e['pain:max:base'] + e['+pain:max']
+  },
+  ['fragment:expiration:time']: [],
+  ['fragment:count']: 0,
+  ['*vengeance:damage']: 0.95,
+  ['+shear:damage']: 0.12,
+  ['*damage']: 1,
+  ['damage']: function(e) {
+    return e['*damage'] * (1 + e['vers:damage-done'])
   }
 })
 export default vengeance

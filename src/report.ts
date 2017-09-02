@@ -4,7 +4,7 @@ export default function report(event: string, data: any) {
       //console.log(`[${event}] ${data.type}: ${data.details}`)
       break
     case 'ABILITY_CASTED':
-      console.log(`[${event}]`)
+      console.log(`[${event}] ${data.entity.slug}: ${data.spell.slug}`)
       break
 
     case 'ABILITY_LEARNED':
@@ -32,7 +32,7 @@ export default function report(event: string, data: any) {
       break
 
     case 'WORLD_TICKED':
-      console.log(`[${event}] ${data.time}`)
+      //console.log(`[${event}] ${data.time}`)
       break
 
     default:

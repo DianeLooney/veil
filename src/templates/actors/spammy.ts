@@ -9,7 +9,8 @@ interface IActorSpammy extends IActor {
 const SpammyTemplate: IActorSpammy = {
   attach(w: World, e: IEntity, s: string): void {
     this.act = function(w: World): void {
-      e.castAbility(s)
+      w.castAbilityByName(e, s)
+      //e.castAbility(s)
     }
   },
   act(w: World): void {}

@@ -1,8 +1,8 @@
 let attributes = {
-  ['level']: 110,
-  ['class']: 12,
+  ['level']: 113,
+  ['class']: 0,
 
-  ['agi:base']: 9027, //TODO: Magic Number
+  ['agi:base']: 0,
   ['+primary:rating']: 0,
   ['+str_agi:rating']: 0,
   ['+agi_int:rating']: 0,
@@ -11,9 +11,9 @@ let attributes = {
     return e['agi:base'] + e['+primary:rating'] + e['+str_agi:rating'] + e['+agi_int:rating'] + e['+agi:rating']
   },
 
-  ['stam:base']: 6259, //TODO: Magic Number
+  ['stam:base']: 100000, //TODO: Magic Number
   ['+stam:rating']: 0,
-  ['*stam:rating']: 1,
+  ['*stam:rating']: 100,
   ['stamina']: function(e) {
     return Math.round((e['stam:base'] + e['+stam:rating']) * e['*stam:rating'])
   },
@@ -43,10 +43,10 @@ let attributes = {
   ['crit:rating']: function(e) {
     return e['+crit:rating'] * e['*crit:rating']
   },
-  ['+crit']: 0,
+  ['+crit']: 0.06,
   ['crit']: function(e) {
     //TODO: 0.05 shouldn't be here, it should be attached to the DH
-    return 0.05 + e['+crit'] + e['crit:rating'] / e['crit:rating:conversion']
+    return e['+crit'] + e['crit:rating'] / e['crit:rating:conversion']
   },
 
   ['parry:rating:conversion']: 51500,
@@ -88,10 +88,8 @@ let attributes = {
 
   ['+mastery:rating']: 0,
   ['mastery:rating:conversion:standard']: 40000,
-  ['mastery:standard:base']: 0.08,
-  ['mastery:standard']: function(e) {
-    return e['mastery:standard:base'] + e['+mastery:rating'] / e['mastery:rating:conversion:standard']
-  },
+  ['mastery:standard:base']: 0.0,
+  ['mastery:standard']: 0,
   ['attackpower']: function(e) {
     //TODO: Base this off of spec-specific str/agi/hpally/mw
     return (1 + e['mastery:standard']) * e['agility']
@@ -100,7 +98,7 @@ let attributes = {
   ['+mainHand:damage:min']: 0,
   ['+mainHand:damage:max']: 0,
   ['+mainHand:speed']: 0,
-  ['mainHand:speed:normalized']: 2.4, //TODO: Magic Number
+  ['mainHand:speed:normalized']: 1.5, //TODO: Magic Number
   ['mainHand:damage:normalized']: function(e) {
     return Math.round((e['+mainHand:damage:min'] + e['+mainHand:damage:max']) / 2 + e['attackpower'] * e['mainHand:speed:normalized'] / 3.5)
   },
@@ -118,7 +116,7 @@ let attributes = {
     return e['+offHand:speed'] == 0 ? 0 : e['offHand:damage:normalized'] / e['+offHand:speed']
   },
 
-  ['+armor:rating']: 0,
+  ['+armor:rating']: 3474,
   ['*armor:rating']: 1,
   ['armor:rating']: function(e) {
     return Math.round(e['+armor:rating'] * e['*armor:rating'])
@@ -132,7 +130,7 @@ let attributes = {
 
   ['*dr:all']: 1,
   ['*dr:physical']: 1,
-  ['*dr:Magical']: 1,
+  ['*dr:magical']: 1,
 
   ['+threat']: 1,
 

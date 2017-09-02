@@ -12,6 +12,8 @@ interface IAbility {
   id: number
   slug: string
   cooldown: number
+  requires: { [key: string]: number }
+  cost: { [key: string]: number }
   passive: boolean
   triggersGCD: boolean
   attributes: { [key: string]: number }
@@ -40,16 +42,33 @@ const activeCast = function(w: World, ...targets: IEntity[]): void {
   if (this.onGCD && this.host.isOnGCD()) {
     return
   }
+  for (let i in this.requires) {
+    if (this.host[i] < this.requires[i]) {
+      return
+    }
+  }
+  for (let i in this.cost) {
+    if (this.host[i] < this.cost[i]) {
+      return
+    }
+  }
+  for (let i in this.cost) {
+    if ((this.host[i] -= this.cost[i])) {
+      return
+    }
+  }
   targets.forEach(t => this.onCast.forEach(h => h(w, this.host, t)))
   if (this.triggersGCD) {
     this.host.triggerGCD()
   }
-  report('ABILITY_CASTED', {})
+  report('ABILITY_CASTED', { entity: this.host, spell: this })
 }
 
 const DefaultAbility: IAbility = {
   id: 0,
   slug: '',
+  requires: {},
+  cost: {},
   cooldown: 0,
   passive: false,
   triggersGCD: true,
@@ -84,6 +103,8 @@ const DefaultPassive: IAbility = {
   slug: '',
   cooldown: 0,
   passive: true,
+  requires: {},
+  cost: {},
   triggersGCD: false,
   attributes: {},
   onGCD: false,

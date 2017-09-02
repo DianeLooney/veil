@@ -5,6 +5,7 @@ import { IModifier } from './modifier'
 import { IItem } from './item'
 import consts from './consts'
 import attributes from './templates/playerAttributes'
+import bossAttributes from './templates/bossAttributes'
 import { parse, build } from './templates/attributeParser'
 import { IRngSource } from './rng'
 interface IResource {
@@ -167,7 +168,54 @@ const DefaultEntity: IEntity = {
   triggerGCD,
   isOnGCD
 }
+const DefaultBossEntity: IEntity = {
+  id: 0,
+  slug: '',
+  name: '',
+  level: 1,
+  health: 100,
+  alive: true,
+  _attributes: bossAttributes,
+  _hooks: {
+    TakingMeleeWhiteDamage: [],
+    TakingMeleeYellowDamage: [],
+    TakingRangedWhiteDamage: [],
+    TakingRangedYellowDamage: [],
+    TakingHarmfulSpell: [],
+    TakingPeriodicDamage: []
+  },
+  items: {
+    head: undefined,
+    neck: undefined,
+    shoulder: undefined,
+    back: undefined,
+    chest: undefined,
+    wrist: undefined,
+    hands: undefined,
+    waist: undefined,
+    legs: undefined,
+    feet: undefined,
+    finger1: undefined,
+    finger2: undefined,
+    trinket1: undefined,
+    trinket2: undefined,
+    mainHand: undefined,
+    offHand: undefined
+  },
+  abilities: {},
+  modifiers: [],
 
+  onInit: [],
+  onSpawn: [],
+  onDespawn: [],
+  onEquipItem: [],
+  onUnequipItem: [],
+  delays: [],
+  rng: {},
+
+  triggerGCD,
+  isOnGCD
+}
 export { IEntity }
 
-export { loadAttributes, DefaultEntity }
+export { loadAttributes, DefaultEntity, DefaultBossEntity }

@@ -66,7 +66,7 @@ const DefaultModifier: IModifier = {
     this.onDrop.forEach(h => h(e))
   },
   tick(w: World): void {
-    if (this.expires <= w.time) {
+    if (this.expires <= w.now) {
       this.drop(this.host)
     }
     this.onTick.forEach(h => h(this.host))
