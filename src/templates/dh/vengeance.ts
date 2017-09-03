@@ -5,6 +5,8 @@ import { IAbility, DefaultAbility, DefaultPassive } from '../../Ability.js'
 import { IModifier } from '../../Modifier'
 import { sequence } from '../../rng'
 import report from '../../report'
+import * as _debug from 'debug'
+const debug = _debug('vengeance')
 
 import artifactMappings from '../../consts/artifactMappings'
 const soulFragmentConsume = Object.assign(Object.create(DefaultPassive), {
@@ -16,22 +18,25 @@ const soulFragmentSpawn = Object.assign(Object.create(DefaultPassive), {
   slug: 'soul-fragment-spawn'
 })
 const spawnFragment = function(w: World, e: IEntity, greater: boolean): void {
+  debug('spawning a soul-fragment')
   e.delays.push({
     when: w.now + w._second * 1.08,
     func: (w: World, e: IEntity) => {
       if (e['fragment:expiration:time'].length >= 5) {
         consumeFragment(w, e, 1)
-
         //TODO: Handle greater fragments
       }
       e['fragment:expiration:time'].push(w.now + w._second * 20)
       e['fragment:count'] += 1
-      report('ABILITY_CASTED', { entity: e, spell: soulFragmentSpawn })
+      debug('spawned a soul-fragment')
+      //report('ABILITY_CASTED', { entity: e, spell: soulFragmentSpawn })
     }
   })
 }
 const consumeFragment = function(w: World, e: IEntity, count: number): void {
-  for (let i = 0; i < count; i++) {
+  while (count > 0) {
+    debug('consuming a soul-fragment')
+    count--
     e['fragment:expiration:time'].shift()
     e['fragment:count'] -= 1
     w.applyHeal(e, e, {
@@ -98,7 +103,7 @@ const fractureMainHand = Object.assign(Object.create(DefaultAbility), {
         source: e,
         target: t,
         type: 'PHYSICAL',
-        mhDamageNorm: 4.51 * e['damage'],
+        mhDamageNorm: 4.51,
         ability: fractureMainHand
       })
       spawnFragment(w, e, false)
@@ -117,7 +122,7 @@ const fractureOffHand = Object.assign(Object.create(DefaultAbility), {
         target: t,
         type: 'PHYSICAL',
         ohDamageNorm: 8.97 * e['*vengeance:damage'] * e['damage'],
-        ability: fractureMainHand
+        ability: fractureOffHand
       })
       spawnFragment(w, e, false)
     }
@@ -132,13 +137,20 @@ const spiritBomb = Object.assign(Object.create(DefaultAbility), {
     (w: World, e: IEntity, t: IEntity) => {
       let x = e['fragment:count']
       consumeFragment(w, e, x)
-      w.dealDamage(e, t, {
-        source: e,
-        target: t,
-        type: 'FIRE',
-        attackPower: 1.8 * x * e['damage'],
-        ability: spiritBomb
+      e.delays.push({
+        when: w.now + 0.125 * w._second,
+        func: (w: World, e: IEntity): void => {
+          //todo: target units in range of the caster intsead of his target
+          w.dealDamage(e, t, {
+            source: e,
+            target: t,
+            type: 'FIRE',
+            attackPower: 1.8 * x * e['damage'],
+            ability: spiritBomb
+          })
+        }
       })
+      debug(`spent ${x} fragments on spirit-bomb`)
     }
   ]
 })
@@ -214,9 +226,7 @@ const artifactTraitsById = {
       id: 212819,
       slug: 'artificial-damage',
       attributes: {
-        //'*damage': 1.0 + 0.0075 * rank
-        //'*damage': 1.0 + 0.01 * Math.min(rank, 52) + 0.00075 * Math.max(0, rank - 52)
-        '*damage': 1.0 + 0.0075 * Math.min(rank, 52) + 0.00075 * Math.max(0, rank - 52)
+        '*damage': 1.0 + 0.0065 * (Math.min(rank, 52) + 6)
       }
     })
   },

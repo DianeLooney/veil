@@ -8,6 +8,8 @@ import savedya from './src/templates/dh/savedya'
 import savedya_gg from './src/templates/dh/savedya_greenglaives'
 import { IActorSpammy, SpammyTemplate } from './src/templates/actors/spammy'
 import consts from './src/consts'
+import * as _debug from 'debug'
+const debug = _debug('index')
 
 const w = new World()
 const e = Object.create(savedya) as IEntity
@@ -37,17 +39,17 @@ let dump = function(e: IEntity): void {
   console.log('maxPain', e['pain:max'] / 10)
   console.log('*damage', e['*damage'])
 }
-dump(
-  e
-) /*
+dump(e)
 setInterval(() => {
   w.tick()
   w.castAbilityByName(e, 'spirit-bomb', idiot)
   w.castAbilityByName(e, 'fracture', idiot)
   w.castAbilityByName(e, 'shear', idiot)
   //console.log(e['fragment:count'])
-}, 25)*/
-while (w.now < w._second * 3) {
+}, 40)
+
+/*
+while (w.now < w._second * 10) {
   w.tick()
   w.castAbilityByName(e, 'spirit-bomb', idiot)
   w.castAbilityByName(e, 'fracture', idiot)

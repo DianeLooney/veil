@@ -2,6 +2,9 @@ import { IEntity, DefaultEntity } from './Entity'
 import World from './World'
 import report from './report'
 
+import * as _debug from 'debug'
+const debug = _debug('ability')
+
 interface ILearnFunc {
   (w: World, e: IEntity): void
 }
@@ -29,39 +32,45 @@ interface IAbility {
   cast(w: World, ...targets: IEntity[]): void
 }
 const triggerCooldown = function(e: IEntity): void {
+  debug(`triggering cooldown of ${this.slug} for ${e.slug}`)
   //e[this.key].cooldown = this.cooldown
 }
 const activeLearn = function(w: World, e: IEntity): void {
+  debug(`learning active ${this.slug} for ${e.slug}`)
   this.host = e
   this.onLearn.forEach(h => h(e))
 }
 const activeUnlearn = function(w: World, e: IEntity): void {
+  debug(`unlearning active ${this.slug} for ${e.slug}`)
   this.onUnlearn.forEach(h => h(e))
 }
 const activeCast = function(w: World, ...targets: IEntity[]): void {
+  //debug(`attempting to cast ${this.slug} for ${this.host.slug}`)
   if (this.onGCD && this.host.isOnGCD()) {
+    //debug(`rejected cast of ${this.slug} for ${this.host.slug}: on gcd`)
     return
   }
   for (let i in this.requires) {
     if (this.host[i] < this.requires[i]) {
+      //debug(`rejected cast of ${this.slug} for ${this.host.slug}: requires '${i}' >= '${this.requires[i]}', and it was '${this.host[i]}'`)
       return
     }
   }
   for (let i in this.cost) {
     if (this.host[i] < this.cost[i]) {
+      //debug(`rejected cast of ${this.slug} for ${this.host.slug}: costs '${i}' - '${this.requires[i]}', and it was '${this.host[i]}'`)
       return
     }
   }
   for (let i in this.cost) {
-    if ((this.host[i] -= this.cost[i])) {
-      return
-    }
+    this.host[i] -= this.cost[i]
   }
   targets.forEach(t => this.onCast.forEach(h => h(w, this.host, t)))
   if (this.triggersGCD) {
     this.host.triggerGCD()
   }
   report('ABILITY_CASTED', { entity: this.host, spell: this })
+  debug(`casted ${this.slug} for ${this.host.slug}`)
 }
 
 const DefaultAbility: IAbility = {

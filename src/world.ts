@@ -4,6 +4,8 @@ import { loadAttributes, IEntity } from './entity'
 import { IActor } from './actor'
 import { IItem } from './item'
 import report from './report'
+import * as _debug from 'debug'
+const debug = _debug('world')
 
 class World {
   _second: number
@@ -153,13 +155,19 @@ class World {
       case 'FIRE':
         let s: IEntity = args.source
         if (args.mhDamageNorm) {
-          a += s['mainHand:damage:normalized'] * args.mhDamageNorm
+          let x = s['mainHand:damage:normalized'] * args.mhDamageNorm * s['damage']
+          debug(`adding ${x} damage from mainHand`)
+          a += x
         }
         if (args.ohDamageNorm) {
-          a += s['offHand:damage:normalized'] * args.ohDamageNorm
+          let x = s['offHand:damage:normalized'] * args.ohDamageNorm * s['damage']
+          debug(`adding ${x} damage from offHand`)
+          a += x
         }
         if (args.attackPower) {
-          a += s['attackpower'] * args.attackPower
+          let x = s['attackpower'] * args.attackPower
+          debug(`adding ${x} damage from arrackpower`)
+          a += x
         } /*
         if (args.mhDamageRaw) {
           a += args.mhDamageRaw * (s['+mainHand:damage:min'] + Math.random() * (s['+mainHand:damage:max'] - s['+mainHand:damage:min']))
@@ -181,13 +189,18 @@ class World {
       if (Math.random() <= args.source['crit']) {
         args.amount *= 2
         args.didCrit = true
+        debug('spell did crit')
       }
     }
     let dr: number = t['*dr:all']
-    if (args.type == 'PHYSICAL' || args.type == 'SWING') {
+    debug(`baseline dr: ${t['*dr:all']}`)
+    if (args.type == 'PHYSICAL') {
+      debug(`physical dr: ${t['*dr:physical']}`)
       dr *= t['*dr:physical']
+      debug(`armor dr: ${t['armor']}`)
       dr *= t['armor']
     } else {
+      debug(`magic dr: ${t['*dr:magical']}`)
       dr *= t['*dr:magical']
     }
     args.amount *= dr
@@ -196,12 +209,12 @@ class World {
 
     if (t.health > args.amount) {
       t.health -= args.amount
-      console.log(args.amount)
+      debug(`damage done:\t${args.source.slug}\t${args.target.slug}\t${args.amount}\t${args.ability.slug}`)
       report('DAMAGE_TAKEN', args)
     } else {
       t.health = 0
+
       report('DAMAGE_TAKEN', args)
-      console.log(args.amount)
       this.kill(args.source, args.ability)
     }
   }
