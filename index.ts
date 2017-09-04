@@ -20,11 +20,12 @@ w.init(idiot)
 w.spawn(e)
 w.spawn(idiot)
 let dump = function(e: IEntity): void {
-  console.log('agi', e['agility'])
-  console.log('attackpower:', e['attackpower'])
+  /*console.log('agi', e['agility'])
+  console.log('attackpower:', e['attackpower'])*/
+  console.log('stam:', e['+stam:rating'])
   console.log('stam:', e['stamina'])
   console.log('maxHealth:', e['maxHealth'])
-  console.log('armor:', e['armor:rating'])
+  /*console.log('armor:', e['armor:rating'])
   console.log('armor-dr', 100 * (1 - e['armor']))
   console.log('crit:', e['crit'] * 100)
   console.log('haste:', e['haste'] * 100)
@@ -37,9 +38,11 @@ let dump = function(e: IEntity): void {
   console.log('nMHwd:', e['mainHand:damage:normalized'])
   console.log('nOHwd:', e['offHand:damage:normalized'])
   console.log('maxPain', e['pain:max'] / 10)
-  console.log('*damage', e['*damage'])
+  console.log('*damage', e['*damage'])*/
 }
 dump(e)
+
+/*
 let first = true
 setInterval(() => {
   w.tick()
@@ -50,11 +53,11 @@ setInterval(() => {
     w.castAbilityByName(e, 'demon-spikes')
     w.castAbilityByName(e, 'spirit-bomb', idiot)
     w.castAbilityByName(e, 'fracture', idiot)
-    w.castAbilityByName(e, 'shear', idiot)*/
+    w.castAbilityByName(e, 'shear', idiot)
   }
   //console.log(e['fragment:count'])
 }, 40)
-
+*/
 /*
 while (w.now < w._second * 10) {
   w.tick()

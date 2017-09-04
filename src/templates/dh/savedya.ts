@@ -1,6 +1,6 @@
 import vengeance from './vengeance'
 import { IEntity } from '../../entity'
-import data from './savedyadh'
+import data from './savedyadh_60'
 import { calcItems } from '../fromArmory'
 import World from '../../world'
 
