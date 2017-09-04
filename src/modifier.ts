@@ -95,7 +95,6 @@ const DefaultModifier: IModifier = {
     }
     let x = Object.create(this) as IModifier
     e.modifiers.push(x)
-    console.log(w)
     x._expires = w.now + x.duration * w._second
     if (x.interval) {
       x._nextInterval = w.now + x.interval * w._second
