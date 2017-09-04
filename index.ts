@@ -45,11 +45,20 @@ let dump = function(e: IEntity): void {
 let first = true
 setInterval(() => {
   _.TickWorld(w)
-  if (first && !_.IsOnGCD(e)) {
-    first = false
-    _.CastAbilityByName(w, e, 'sigil-of-flame')
+
+  if (!_.IsOnGCD(e)) {
+    _.CastAbilityByName(w, e, 'empower-wards')
+    _.CastAbilityByName(w, e, 'demon-spikes')
+    _.CastAbilityByName(w, e, 'sigil-of-flame', idiot)
+    if (e['fragment:count'] >= 5) {
+      _.CastAbilityByName(w, e, 'spirit-bomb')
+    }
+    _.CastAbilityByName(w, e, 'fracture', idiot)
+    _.CastAbilityByName(w, e, 'shear', idiot)
+
+    //_.CastAbilityByName(w, e, 'sigil-of-flame')
     /*
-    w.castAbilityByName(e, 'demon-spikes')
+    
     w.castAbilityByName(e, 'spirit-bomb', idiot)
     w.castAbilityByName(e, 'fracture', idiot)
     w.castAbilityByName(e, 'shear', idiot)*/

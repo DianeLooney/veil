@@ -146,6 +146,9 @@ let attributes = {
   ['*spell:recharge-rate:base']: 1,
   ['spell:recharge-rate:hasted']: function(e) {
     return e['*spell:recharge-rate:base'] * (1 + e['haste'])
+  },
+  ['spell:recharge-rate:unhasted']: function(e) {
+    return e['*spell:recharge-rate:base']
   }
 }
 export default attributes

@@ -4,7 +4,7 @@ import { IWorld } from '../../world'
 import * as _ from '../../actions'
 import { IAbility, DefaultAbility, DefaultPassive } from '../../Ability'
 import { DefaultModifier, IModifier } from '../../Modifier'
-import { sequence } from '../../rng'
+import { sequence, rppm } from '../../rng'
 import report from '../../report'
 import * as _debug from 'debug'
 const debug = _debug('vengeance')
@@ -44,8 +44,27 @@ const consumeFragment = function(w: IWorld, e: IEntity, count: number): void {
       attackPower: 2.5,
       spell: soulFragmentConsume
     })
+    if (e['trait:painbringer:rank'] !== undefined && e['trait:painbringer:rank'] >= 1) {
+      _.ApplyModifier(w, e, Object.assign(Object.create(painbringerModifier), { source: e }) as IModifier)
+    }
+    if (e['trait:fueled-by-pain:rank'] !== undefined && e['trait:fueled-by-pain:rank'] >= 1) {
+      if (!e.rng['fueled-by-pain']) {
+        e.rng['fueled-by-pain'] = rppm(w, 1.0)
+      }
+      if (e.rng['fueled-by-pain'].next()) {
+        //TODO: Apply Meta Modifier
+      }
+    }
   }
 }
+const painbringerModifier = Object.assign(Object.create(DefaultModifier), {
+  slug: 'painbringer',
+  stackMode: 'DISJOINT',
+  attributes: {
+    '*dr:all': 0.97
+  },
+  duration: 4
+})
 const shear = Object.assign(Object.create(DefaultAbility), {
   id: 203782,
   slug: 'shear',
@@ -68,8 +87,14 @@ const shear = Object.assign(Object.create(DefaultAbility), {
       if (!e.rng['shear:shatter']) {
         e.rng['shear:shatter'] = sequence([0.04, 0.12, 0.25, 0.4, 0.6, 0.8, 0.9, 1.0])
       }
-      if (e.rng['shear:shatter'].next()) {
-        spawnFragment(w, e, false)
+      if (e['trait:shatter-the-souls:rank'] !== undefined && e.health < 0.5 * e['maxHealth']) {
+        if (e.rng['shear:shatter'].next(1 + e['trait:shatter-the-souls:rank'] * 0.05)) {
+          spawnFragment(w, e, false)
+        }
+      } else {
+        if (e.rng['shear:shatter'].next()) {
+          spawnFragment(w, e, false)
+        }
       }
     }
   ]
@@ -155,6 +180,7 @@ const spiritBomb = Object.assign(Object.create(DefaultAbility), {
     }
   ]
 })
+
 const sigilOfFlameModifier = Object.assign(Object.create(DefaultModifier), {
   slug: 'sigil-of-flame-modifier',
   onInterval: [
@@ -163,7 +189,7 @@ const sigilOfFlameModifier = Object.assign(Object.create(DefaultModifier), {
         source: s,
         target: e,
         type: 'FIRE',
-        attackPower: 1.86 * 0.95 * e['damage'],
+        attackPower: 1.86 * 0.95 * s['damage'] / 6,
         ability: sigilOfFlame
       })
     }
@@ -175,26 +201,34 @@ const sigilOfFlame = Object.assign(Object.create(DefaultAbility), {
   slug: 'sigil-of-flame',
   cooldown: 30,
   recharges: ['ability:sigil-of-flame:cooldown'],
+  cost: { ['ability:sigil-of-flame:cooldown']: 1 },
+  attributes: {
+    'ability:sigil-of-flame:cooldown': 1
+  },
   onCast: [
     (w: IWorld, e: IEntity, t: IEntity) => {
+      let x = t.position
       e.delays.push({
         when: w.now + 2 * w._second,
         func: (w: IWorld, e: IEntity): void => {
           //TODO: Make this an AE spell
-          _.DealDamage(e, t, {
-            source: e,
-            target: t,
-            type: 'FIRE',
-            attackPower: 1.86 * 0.95 * e['damage'],
-            ability: sigilOfFlame
+          _.EnemiesTouchingRadius(w, x, 8).forEach(y => {
+            _.DealDamage(e, y, {
+              source: e,
+              target: y,
+              type: 'FIRE',
+              attackPower: 1.86 * 0.95 * e['damage'],
+              ability: sigilOfFlame
+            })
+            let z = Object.assign(Object.create(sigilOfFlameModifier), { source: e })
+            _.ApplyModifier(w, y, z)
           })
-          let x = Object.assign(Object.create(sigilOfFlameModifier), { source: e })
-          _.ApplyModifier(w, t, x)
         }
       })
     }
   ]
 }) as IAbility
+
 const demonSpikesBuff = Object.assign(Object.create(DefaultModifier), {
   slug: 'demon-spikes',
   stackMode: 'EXTEND',
@@ -229,10 +263,37 @@ const demonSpikesSpell = Object.assign(Object.create(DefaultAbility), {
     (w: IWorld, e: IEntity, t: IEntity) => {
       debug(`Current charges of demon-pikes: ${e['ability:demon-spikes:charges']}`)
       demonSpikesBuff.apply(w, e)
-      defensiveSpikesBuff.apply(w, e)
+      if (e['trait:defensive-spikes:rank'] !== undefined && e['trait:defensive-spikes:rank'] >= 1) {
+        defensiveSpikesBuff.apply(w, e)
+      }
     }
   ]
 })
+const empowerWardsBuff = Object.assign(Object.create(DefaultModifier), {
+  slug: 'empower-wards-modifier',
+  duration: 6,
+  attributes: {
+    '*dr:magical': 0.7
+  }
+}) as IModifier
+const empowerWards = Object.assign(Object.create(DefaultAbility), {
+  slug: 'empower-wards',
+  cooldown: 20,
+  recharges: ['ability:empower-wards:cooldown'],
+  cost: {
+    'ability:empower-wards:cooldown': 1
+  },
+  attributes: {
+    'ability:empower-wards:cooldown': 1
+  },
+  onGCD: false,
+  triggersGCD: false,
+  onCast: [
+    (w: IWorld, e: IEntity) => {
+      empowerWardsBuff.apply(w, e)
+    }
+  ]
+}) as IAbility
 const increasedThreat = Object.assign(Object.create(DefaultPassive), {
   id: 189926,
   slug: 'increased-threat',
@@ -329,6 +390,42 @@ const artifactTraitsById = {
         '+parry': 0.04
       }
     })
+  },
+  212829: function defensiveSpikes(rank: number): any {
+    return Object.assign(Object.create(DefaultPassive), {
+      id: 212829,
+      slug: 'defensive-spikes',
+      attributes: {
+        'trait:defensive-spikes:rank': rank
+      }
+    })
+  },
+  207387: function painbringer(rank: number): any {
+    return Object.assign(Object.create(DefaultPassive), {
+      id: 207387,
+      slug: 'painbringer',
+      attributes: {
+        'trait:painbringer:rank': rank
+      }
+    })
+  },
+  212827: function shatterTheSouls(rank: number): any {
+    return Object.assign(Object.create(DefaultPassive), {
+      id: 212827,
+      slug: 'shatter-the-souls',
+      attributes: {
+        'trait:shatter-the-souls:rank': rank
+      }
+    })
+  },
+  213017: function fueledByPain(rank: number): any {
+    return Object.assign(Object.create(DefaultPassive), {
+      id: 213017,
+      slug: 'fueled-by-pain',
+      attributes: {
+        'trait:fueled-by-pain:rank': rank
+      }
+    })
   }
 }
 const enchants = Object.assign(Object.create(DefaultPassive), {
@@ -350,6 +447,7 @@ const vengeance = Object.assign(Object.create(DefaultEntity), {
       _.TeachAbility(w, e, spiritBomb)
       _.TeachAbility(w, e, demonSpikesSpell)
       _.TeachAbility(w, e, sigilOfFlame)
+      _.TeachAbility(w, e, empowerWards)
 
       _.TeachAbility(w, e, fractureMainHand)
       _.TeachAbility(w, e, fractureOffHand)

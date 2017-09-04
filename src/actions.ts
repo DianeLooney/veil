@@ -1,6 +1,6 @@
 import { IAbility } from './ability'
 import { IModifier } from './modifier'
-import { IEntity } from './entity'
+import { IEntity, IPosition } from './entity'
 import { IItem } from './item'
 import { IWorld } from './world'
 import { parse, build } from './templates/attributeParser'
@@ -69,6 +69,13 @@ const TickWorld = (w: IWorld): void => {
       if (a.cooldown == 0 || !a.cooldown) {
         continue
       }
+      a.recharges.forEach(cd => {
+        let cap = 1
+        if (e[cd + ':cap'] !== undefined) {
+          cap = e[cd + ':cap']
+        }
+        e[cd] = Math.min(cap, e[cd] + e['spell:recharge-rate:unhasted'] * w._tickDelta / (w._second * a.cooldown))
+      })
       a.hastedRecharges.forEach(cd => {
         let cap = 1
         if (e[cd + ':cap'] !== undefined) {
@@ -313,3 +320,24 @@ const IsOnGCD = (e: IEntity): boolean => {
   return e['gcd:remaining'] > 0
 }
 export { IsOnGCD }
+
+const DistanceBetweenUnits = (e1: IEntity, e2: IEntity): number => {
+  let dx = e1.position.x - e2.position.x
+  let dy = e1.position.y - e2.position.y
+  return Math.sqrt(dx * dx + dy * dy)
+}
+export { DistanceBetweenUnits }
+
+const DistanceToUnitCenter = (pos: IPosition, e: IEntity): number => {
+  let dx = pos.x - e.position.x
+  let dy = pos.y - e.position.y
+  return Math.sqrt(dx * dx + dy * dy)
+}
+const DistanceToUnitHitbox = (pos: IPosition, e: IEntity): number => {
+  return Math.max(0, DistanceToUnitCenter(pos, e) - e.hitradius)
+}
+export { DistanceToUnitHitbox }
+const EnemiesTouchingRadius = (w: IWorld, pos: IPosition, r: number): IEntity[] => {
+  return w.entities.filter(x => x.friendly === false && DistanceToUnitHitbox(pos, x) <= r)
+}
+export { EnemiesTouchingRadius }

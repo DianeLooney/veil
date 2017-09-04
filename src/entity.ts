@@ -34,6 +34,15 @@ interface DamageEvent {
 interface IHookFunc {
   (x: any): void
 }
+interface IPosition {
+  x: number
+  y: number
+}
+export { IPosition }
+interface IVector {
+  dx: number
+  dy: number
+}
 interface IEntity {
   id: number
   slug: string
@@ -41,6 +50,9 @@ interface IEntity {
   level: number
   health: number
   alive: boolean
+  hitradius: number
+  friendly: boolean
+  position: IPosition
   items: {
     head: IItem
     neck: IItem
@@ -60,7 +72,7 @@ interface IEntity {
     offHand: IItem
   }
   _attributes: any
-  rng: { [key: string]: IRngSource }
+  rng: { [key: string]: any }
   abilities: { [key: string]: IAbility }
   modifiers: IModifier[]
 
@@ -79,9 +91,12 @@ const DefaultEntity: IEntity = {
   slug: '',
   name: '',
   level: 1,
+  hitradius: 3,
   health: 100,
+  friendly: true,
   alive: true,
   _attributes: attributes,
+  position: { x: 0, y: 0 },
   items: {
     head: undefined,
     neck: undefined,
@@ -117,8 +132,11 @@ const DefaultBossEntity: IEntity = {
   name: '',
   level: 1,
   health: 100,
+  hitradius: 15,
+  friendly: false,
   alive: true,
   _attributes: bossAttributes,
+  position: { x: 0, y: 0 },
   items: {
     head: undefined,
     neck: undefined,
