@@ -1,28 +1,28 @@
 import report from './report'
 import { IAbility } from './ability'
-import World from './world'
+import { IWorld } from './world'
 import { IModifier } from './modifier'
 import { IItem } from './item'
 import consts from './consts'
 import attributes from './templates/playerAttributes'
 import bossAttributes from './templates/bossAttributes'
-import { parse, build } from './templates/attributeParser'
 import { IRngSource } from './rng'
+
 interface IResource {
   current: number
   max: number
 }
 interface IInitFunc {
-  (w: World, e: IEntity): void
+  (w: IWorld, e: IEntity): void
 }
 interface ISpawnFunc {
-  (w: World, e: IEntity): void
+  (w: IWorld, e: IEntity): void
 }
 interface IItemFunc {
-  (w: World, e: IEntity, i: IItem, slot: string): void
+  (w: IWorld, e: IEntity, i: IItem, slot: string): void
 }
 interface IDelayFunc {
-  (w: World, e: IEntity): void
+  (w: IWorld, e: IEntity): void
 }
 interface DamageEvent {
   source: IEntity
@@ -60,7 +60,6 @@ interface IEntity {
     offHand: IItem
   }
   _attributes: any
-  _hooks: { [key: string]: IHookFunc[] }
   rng: { [key: string]: IRngSource }
   abilities: { [key: string]: IAbility }
   modifiers: IModifier[]
@@ -73,53 +72,8 @@ interface IEntity {
   onUnequipItem: IItemFunc[]
 
   delays: { when: number; func: IDelayFunc }[]
-
-  triggerGCD(): void
-  isOnGCD(): boolean
 }
-const triggerGCD = function(): void {
-  this['gcd:remaining'] = this['gcd:time']
-}
-const isOnGCD = function(): boolean {
-  return this['gcd:remaining'] > 0
-}
-
-interface getter {
-  (): number
-}
-interface entityGetter {
-  (e: IEntity): number
-}
-interface setter {
-  (value: any): void
-}
-
-const loadAttributes = function(e: IEntity) {
-  let d = build(parse(e._attributes))
-  for (let i in d) {
-    let k = i
-    let r = d[k]
-    switch (typeof r.value) {
-      case 'function':
-        delete e[k]
-        Object.defineProperty(e, k, {
-          get: function() {
-            if (e[`__${k}__`] === undefined) {
-              e[`__${k}__`] = r.value(e)
-            }
-            return e[`__${k}__`]
-          },
-          set: function(v) {
-            console.error(`Unable to set attribute ${k} of ${e.slug}`)
-          }
-        })
-        break
-      default:
-        delete e[k]
-        e[k] = r.value
-    }
-  }
-}
+export { IEntity }
 const DefaultEntity: IEntity = {
   id: 0,
   slug: '',
@@ -128,14 +82,6 @@ const DefaultEntity: IEntity = {
   health: 100,
   alive: true,
   _attributes: attributes,
-  _hooks: {
-    TakingMeleeWhiteDamage: [],
-    TakingMeleeYellowDamage: [],
-    TakingRangedWhiteDamage: [],
-    TakingRangedYellowDamage: [],
-    TakingHarmfulSpell: [],
-    TakingPeriodicDamage: []
-  },
   items: {
     head: undefined,
     neck: undefined,
@@ -163,10 +109,7 @@ const DefaultEntity: IEntity = {
   onEquipItem: [],
   onUnequipItem: [],
   delays: [],
-  rng: {},
-
-  triggerGCD,
-  isOnGCD
+  rng: {}
 }
 const DefaultBossEntity: IEntity = {
   id: 0,
@@ -176,14 +119,6 @@ const DefaultBossEntity: IEntity = {
   health: 100,
   alive: true,
   _attributes: bossAttributes,
-  _hooks: {
-    TakingMeleeWhiteDamage: [],
-    TakingMeleeYellowDamage: [],
-    TakingRangedWhiteDamage: [],
-    TakingRangedYellowDamage: [],
-    TakingHarmfulSpell: [],
-    TakingPeriodicDamage: []
-  },
   items: {
     head: undefined,
     neck: undefined,
@@ -211,11 +146,7 @@ const DefaultBossEntity: IEntity = {
   onEquipItem: [],
   onUnequipItem: [],
   delays: [],
-  rng: {},
-
-  triggerGCD,
-  isOnGCD
+  rng: {}
 }
-export { IEntity }
 
-export { loadAttributes, DefaultEntity, DefaultBossEntity }
+export { DefaultEntity, DefaultBossEntity }

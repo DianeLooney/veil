@@ -1,5 +1,5 @@
 import { IEntity } from './Entity'
-import World from './World'
+import { IWorld } from './World'
 import * as _debug from 'debug'
 const debug = _debug('modifier')
 const verbose = _debug('verbose:modifier')
@@ -11,7 +11,7 @@ interface IDropFunc {
   (e: IEntity): void
 }
 interface ITickFunc {
-  (w: World, e: IEntity): void
+  (w: IWorld, e: IEntity): void
 }
 interface IModifier {
   id: number
@@ -29,9 +29,9 @@ interface IModifier {
   _nextInterval: number
   _expires: number
   duration: number
-  apply(w: World, e: IEntity): void
-  drop(w: World, e: IEntity): void
-  tick(w: World): void
+  apply(w: IWorld, e: IEntity): void
+  drop(w: IWorld, e: IEntity): void
+  tick(w: IWorld): void
 }
 const DefaultModifier: IModifier = {
   id: 0,
@@ -49,7 +49,7 @@ const DefaultModifier: IModifier = {
   _nextInterval: 0,
   duration: 0,
   _expires: 0,
-  apply(w: World, e: IEntity): void {
+  apply(w: IWorld, e: IEntity): void {
     this.host = e
     //TODO: Base this off of spellID
     let matching = e.modifiers.filter(x => x.slug === this.slug)
@@ -116,7 +116,7 @@ const DefaultModifier: IModifier = {
     x.onApply.forEach(h => h(e))
     debug(`Adding modifier ${x.slug} to ${e.slug}`)
   },
-  drop(w: World, e: IEntity): void {
+  drop(w: IWorld, e: IEntity): void {
     for (var a in this.attributes) {
       //TODO: Move this to world drop
       switch (a.charAt[0]) {
@@ -134,7 +134,7 @@ const DefaultModifier: IModifier = {
     e.modifiers = e.modifiers.filter(x => x != this)
     debug(`Dropping modifier ${this.slug} from ${e.slug}`)
   },
-  tick(w: World): void {
+  tick(w: IWorld): void {
     if (this._nextInterval <= w.now) {
       this.onInterval.forEach(h => h(w, this.source, this.host))
       if (this.intervalIsHasted) {

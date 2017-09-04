@@ -1,6 +1,7 @@
 import { IEntity, DefaultEntity } from '../../Entity'
 import { IItem } from '../../item'
-import World from '../../world'
+import { IWorld } from '../../world'
+import * as _ from '../../actions'
 import { IAbility, DefaultAbility, DefaultPassive } from '../../Ability'
 import { DefaultModifier, IModifier } from '../../Modifier'
 import { sequence } from '../../rng'
@@ -17,11 +18,11 @@ const soulFragmentSpawn = Object.assign(Object.create(DefaultPassive), {
   id: 204255,
   slug: 'soul-fragment-spawn'
 })
-const spawnFragment = function(w: World, e: IEntity, greater: boolean): void {
+const spawnFragment = function(w: IWorld, e: IEntity, greater: boolean): void {
   debug('spawning a soul-fragment')
   e.delays.push({
     when: w.now + w._second * 1.08,
-    func: (w: World, e: IEntity) => {
+    func: (w: IWorld, e: IEntity) => {
       if (e['fragment:expiration:time'].length >= 5) {
         consumeFragment(w, e, 1)
         //TODO: Handle greater fragments
@@ -33,13 +34,13 @@ const spawnFragment = function(w: World, e: IEntity, greater: boolean): void {
     }
   })
 }
-const consumeFragment = function(w: World, e: IEntity, count: number): void {
+const consumeFragment = function(w: IWorld, e: IEntity, count: number): void {
   while (count > 0) {
     debug('consuming a soul-fragment')
     count--
     e['fragment:expiration:time'].shift()
     e['fragment:count'] -= 1
-    w.applyHeal(e, e, {
+    _.DealHealing(e, e, {
       attackPower: 2.5,
       spell: soulFragmentConsume
     })
@@ -49,12 +50,12 @@ const shear = Object.assign(Object.create(DefaultAbility), {
   id: 203782,
   slug: 'shear',
   onCast: [
-    (w: World, e: IEntity, t: IEntity) => {
+    (w: IWorld, e: IEntity, t: IEntity) => {
       //340% Weapon Damage
       //+100 Pain
       //Shatter
 
-      w.dealDamage(e, t, {
+      _.DealDamage(e, t, {
         source: e,
         target: t,
         type: 'PHYSICAL',
@@ -80,12 +81,12 @@ const fracture = Object.assign(Object.create(DefaultAbility), {
     'pain:current': 300
   },
   onCast: [
-    (w: World, e: IEntity, t: IEntity) => {
-      w.castAbilityByReference(e, fractureMainHand, t)
+    (w: IWorld, e: IEntity, t: IEntity) => {
+      _.CastAbilityByReference(e, fractureMainHand, t)
       e.delays.push({
         when: w.now + 0.125 * w._second,
-        func: (w: World, e: IEntity): void => {
-          w.castAbilityByReference(e, fractureOffHand, t)
+        func: (w: IWorld, e: IEntity): void => {
+          _.CastAbilityByReference(e, fractureOffHand, t)
         }
       })
     }
@@ -97,8 +98,8 @@ const fractureMainHand = Object.assign(Object.create(DefaultAbility), {
   onGCD: false,
   triggersGCD: false,
   onCast: [
-    (w: World, e: IEntity, t: IEntity) => {
-      w.dealDamage(e, t, {
+    (w: IWorld, e: IEntity, t: IEntity) => {
+      _.DealDamage(e, t, {
         source: e,
         target: t,
         type: 'PHYSICAL',
@@ -115,8 +116,8 @@ const fractureOffHand = Object.assign(Object.create(DefaultAbility), {
   onGCD: false,
   triggersGCD: false,
   onCast: [
-    (w: World, e: IEntity, t: IEntity) => {
-      w.dealDamage(e, t, {
+    (w: IWorld, e: IEntity, t: IEntity) => {
+      _.DealDamage(e, t, {
         source: e,
         target: t,
         type: 'PHYSICAL',
@@ -133,14 +134,14 @@ const spiritBomb = Object.assign(Object.create(DefaultAbility), {
     ['fragment:count']: 1
   },
   onCast: [
-    (w: World, e: IEntity, t: IEntity) => {
+    (w: IWorld, e: IEntity, t: IEntity) => {
       let x = e['fragment:count']
       consumeFragment(w, e, x)
       e.delays.push({
         when: w.now + 0.125 * w._second,
-        func: (w: World, e: IEntity): void => {
+        func: (w: IWorld, e: IEntity): void => {
           //TODO: target units in range of the caster intsead of his target
-          w.dealDamage(e, t, {
+          _.DealDamage(e, t, {
             source: e,
             target: t,
             type: 'FIRE',
@@ -157,9 +158,9 @@ const spiritBomb = Object.assign(Object.create(DefaultAbility), {
 const sigilOfFlameModifier = Object.assign(Object.create(DefaultModifier), {
   slug: 'sigil-of-flame-modifier',
   onInterval: [
-    (w: World, s: IEntity, e: IEntity) => {
+    (w: IWorld, s: IEntity, e: IEntity) => {
       console.log('this:', this)
-      w.dealDamage(this.source, e, {
+      _.DealDamage(this.source, e, {
         source: this.source,
         target: e,
         type: 'FIRE',
@@ -176,12 +177,12 @@ const sigilOfFlame = Object.assign(Object.create(DefaultAbility), {
   cooldown: 30,
   recharges: ['ability:sigil-of-flame:cooldown'],
   onCast: [
-    (w: World, e: IEntity, t: IEntity) => {
+    (w: IWorld, e: IEntity, t: IEntity) => {
       e.delays.push({
         when: w.now + 2 * w._second,
-        func: (w: World, e: IEntity): void => {
+        func: (w: IWorld, e: IEntity): void => {
           //TODO: Make this an AE spell
-          w.dealDamage(e, t, {
+          _.DealDamage(e, t, {
             source: e,
             target: t,
             type: 'FIRE',
@@ -190,7 +191,7 @@ const sigilOfFlame = Object.assign(Object.create(DefaultAbility), {
           })
           let x = Object.assign(Object.create(sigilOfFlameModifier), { source: e })
           console.log(x.source)
-          w.applyModifier(t, x)
+          _.ApplyModifier(t, x)
         }
       })
     }
@@ -227,7 +228,7 @@ const demonSpikesSpell = Object.assign(Object.create(DefaultAbility), {
   onGCD: false,
   triggersGCD: false,
   onCast: [
-    (w: World, e: IEntity, t: IEntity) => {
+    (w: IWorld, e: IEntity, t: IEntity) => {
       debug(`Current charges of demon-pikes: ${e['ability:demon-spikes:charges']}`)
       demonSpikesBuff.apply(w, e)
       defensiveSpikesBuff.apply(w, e)
@@ -342,61 +343,62 @@ const enchants = Object.assign(Object.create(DefaultPassive), {
 })
 const vengeance = Object.assign(Object.create(DefaultEntity), {
   onInit: [
-    function(w: World, e: IEntity) {
-      w.teachAbility(e, arcaneAcuity) //TODO: Only load of belfs
+    function(w: IWorld, e: IEntity) {
+      _.TeachAbility
+      _.TeachAbility(e, arcaneAcuity) //TODO: Only load of belfs
 
-      w.teachAbility(e, shear)
-      w.teachAbility(e, fracture)
-      w.teachAbility(e, spiritBomb)
-      w.teachAbility(e, demonSpikesSpell)
-      w.teachAbility(e, sigilOfFlame)
+      _.TeachAbility(e, shear)
+      _.TeachAbility(e, fracture)
+      _.TeachAbility(e, spiritBomb)
+      _.TeachAbility(e, demonSpikesSpell)
+      _.TeachAbility(e, sigilOfFlame)
 
-      w.teachAbility(e, fractureMainHand)
-      w.teachAbility(e, fractureOffHand)
-      w.teachAbility(e, increasedThreat)
-      w.teachAbility(e, demonicWards)
-      w.teachAbility(e, leatherSpecialization)
-      w.teachAbility(e, criticalStrikes)
-      w.teachAbility(e, enchants)
+      _.TeachAbility(e, fractureMainHand)
+      _.TeachAbility(e, fractureOffHand)
+      _.TeachAbility(e, increasedThreat)
+      _.TeachAbility(e, demonicWards)
+      _.TeachAbility(e, leatherSpecialization)
+      _.TeachAbility(e, criticalStrikes)
+      _.TeachAbility(e, enchants)
     }
   ],
   onEquipItem: [
-    (w: World, e: IEntity, i: IItem, s: string) => {
+    (w: IWorld, e: IEntity, i: IItem, s: string) => {
       if (i.artifactId === 60) {
         let totalRanks = -3
         i.artifactTraits.forEach(t => {
           totalRanks += t.rank
           let spellId = artifactMappings[t.id][t.rank - 1]
           if (artifactTraitsById[spellId] !== undefined) {
-            w.teachAbility(e, artifactTraitsById[spellId](t.rank))
+            _.TeachAbility(e, artifactTraitsById[spellId](t.rank))
           } else {
             console.warn(`unrecognized artifact trait: ${spellId} (rank ${t.rank})`)
           }
         })
-        w.teachAbility(e, artifactTraitsById[211309](totalRanks))
-        w.teachAbility(e, artifactTraitsById[226829](totalRanks))
+        _.TeachAbility(e, artifactTraitsById[211309](totalRanks))
+        _.TeachAbility(e, artifactTraitsById[226829](totalRanks))
       }
     }
   ],
   onUnequipItem: [
-    (w: World, e: IEntity, i: IItem, s: string) => {
+    (w: IWorld, e: IEntity, i: IItem, s: string) => {
       if (i.artifactId === 60) {
         let totalRanks = -3
         i.artifactTraits.forEach(t => {
           totalRanks += t.rank
           let spellId = artifactMappings[t.id][t.rank - 1]
           if (artifactTraitsById[spellId] !== undefined) {
-            w.unteachAbility(e, artifactTraitsById[spellId](t.rank))
+            _.UnteachAbility(e, artifactTraitsById[spellId](t.rank))
           } else {
             console.warn(`unrecognized artifact trait: ${spellId} (rank ${t.rank})`)
           }
         })
-        w.unteachAbility(e, artifactTraitsById[211309](totalRanks))
-        w.unteachAbility(e, artifactTraitsById[226829](totalRanks))
+        _.UnteachAbility(e, artifactTraitsById[211309](totalRanks))
+        _.UnteachAbility(e, artifactTraitsById[226829](totalRanks))
       }
     }
   ],
-  onSpawn: [(w: World, e: IEntity) => {}]
+  onSpawn: [(w: IWorld, e: IEntity) => {}]
 })
 
 vengeance._attributes = Object.assign(DefaultEntity._attributes, {
@@ -419,7 +421,7 @@ vengeance._attributes = Object.assign(DefaultEntity._attributes, {
 })
 export default vengeance
 
-/*
+/* 
 //passives
 189926, // Increased Threat
 203513, // Demonic Wards

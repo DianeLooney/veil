@@ -1,5 +1,6 @@
 import { IEntity, DefaultEntity } from './Entity'
-import World from './World'
+import * as _ from './actions'
+import { IWorld } from './World'
 import report from './report'
 
 import * as _debug from 'debug'
@@ -7,7 +8,7 @@ const debug = _debug('ability')
 const verbose = _debug('verbose:ability')
 
 interface ILearnFunc {
-  (w: World, e: IEntity): void
+  (w: IWorld, e: IEntity): void
 }
 interface ICastFunc {
   (e: IEntity, ...targets: IEntity[]): void
@@ -32,28 +33,28 @@ interface IAbility {
   triggerCooldown(e: IEntity): void
   learn: ILearnFunc
   unlearn: ILearnFunc
-  cast(w: World, ...targets: IEntity[]): void
+  cast(w: IWorld, ...targets: IEntity[]): void
 }
 const triggerCooldown = function(e: IEntity): void {
   verbose(`triggering cooldown of ${this.slug} for ${e.slug}`)
   //e[this.key].cooldown = this.cooldown
 }
-const activeLearn = function(w: World, e: IEntity): void {
+const activeLearn = function(w: IWorld, e: IEntity): void {
   debug(`learning active ${this.slug} for ${e.slug}`)
   this.host = e
   this.onLearn.forEach(h => h(e))
   for (var a in this.attributes) {
-    w.gainAttribute(e, a, this.attributes[a])
+    _.GainAttribute(e, a, this.attributes[a])
   }
 }
-const activeUnlearn = function(w: World, e: IEntity): void {
+const activeUnlearn = function(w: IWorld, e: IEntity): void {
   debug(`unlearning active ${this.slug} for ${e.slug}`)
   this.onUnlearn.forEach(h => h(e))
   for (var a in this.attributes) {
-    w.loseAttribute(e, a, this.attributes[a])
+    _.LoseAttribute(e, a, this.attributes[a])
   }
 }
-const activeCast = function(w: World, ...targets: IEntity[]): void {
+const activeCast = function(w: IWorld, ...targets: IEntity[]): void {
   verbose(`attempting to cast ${this.slug} for ${this.host.slug}`)
   if (this.onGCD && this.host.isOnGCD()) {
     verbose(`rejected cast of ${this.slug} for ${this.host.slug}: on gcd`)
@@ -110,18 +111,18 @@ const DefaultAbility: IAbility = {
   cast: activeCast
 }
 
-const passiveLearn = function(w: World, e: IEntity): void {
+const passiveLearn = function(w: IWorld, e: IEntity): void {
   this.host = e
   for (var a in this.attributes) {
-    w.gainAttribute(e, a, this.attributes[a])
+    _.GainAttribute(e, a, this.attributes[a])
   }
 }
-const passiveUnlearn = function(w: World, e: IEntity): void {
+const passiveUnlearn = function(w: IWorld, e: IEntity): void {
   for (var a in this.attributes) {
-    w.loseAttribute(e, a, this.attributes[a])
+    _.LoseAttribute(e, a, this.attributes[a])
   }
 }
-const passiveCast = function(w: World, ...target: IEntity[]): void {}
+const passiveCast = function(w: IWorld, ...target: IEntity[]): void {}
 
 const DefaultPassive: IAbility = {
   id: 0,
