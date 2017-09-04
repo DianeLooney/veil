@@ -82,11 +82,11 @@ const fracture = Object.assign(Object.create(DefaultAbility), {
   },
   onCast: [
     (w: IWorld, e: IEntity, t: IEntity) => {
-      _.CastAbilityByReference(e, fractureMainHand, t)
+      _.CastAbilityByReference(w, e, fractureMainHand, t)
       e.delays.push({
         when: w.now + 0.125 * w._second,
         func: (w: IWorld, e: IEntity): void => {
-          _.CastAbilityByReference(e, fractureOffHand, t)
+          _.CastAbilityByReference(w, e, fractureOffHand, t)
         }
       })
     }
@@ -159,9 +159,8 @@ const sigilOfFlameModifier = Object.assign(Object.create(DefaultModifier), {
   slug: 'sigil-of-flame-modifier',
   onInterval: [
     (w: IWorld, s: IEntity, e: IEntity) => {
-      console.log('this:', this)
-      _.DealDamage(this.source, e, {
-        source: this.source,
+      _.DealDamage(s, e, {
+        source: s,
         target: e,
         type: 'FIRE',
         attackPower: 1.86 * 0.95 * e['damage'],
@@ -190,8 +189,7 @@ const sigilOfFlame = Object.assign(Object.create(DefaultAbility), {
             ability: sigilOfFlame
           })
           let x = Object.assign(Object.create(sigilOfFlameModifier), { source: e })
-          console.log(x.source)
-          _.ApplyModifier(t, x)
+          _.ApplyModifier(w, t, x)
         }
       })
     }
@@ -345,21 +343,21 @@ const vengeance = Object.assign(Object.create(DefaultEntity), {
   onInit: [
     function(w: IWorld, e: IEntity) {
       _.TeachAbility
-      _.TeachAbility(e, arcaneAcuity) //TODO: Only load of belfs
+      _.TeachAbility(w, e, arcaneAcuity) //TODO: Only load of belfs
 
-      _.TeachAbility(e, shear)
-      _.TeachAbility(e, fracture)
-      _.TeachAbility(e, spiritBomb)
-      _.TeachAbility(e, demonSpikesSpell)
-      _.TeachAbility(e, sigilOfFlame)
+      _.TeachAbility(w, e, shear)
+      _.TeachAbility(w, e, fracture)
+      _.TeachAbility(w, e, spiritBomb)
+      _.TeachAbility(w, e, demonSpikesSpell)
+      _.TeachAbility(w, e, sigilOfFlame)
 
-      _.TeachAbility(e, fractureMainHand)
-      _.TeachAbility(e, fractureOffHand)
-      _.TeachAbility(e, increasedThreat)
-      _.TeachAbility(e, demonicWards)
-      _.TeachAbility(e, leatherSpecialization)
-      _.TeachAbility(e, criticalStrikes)
-      _.TeachAbility(e, enchants)
+      _.TeachAbility(w, e, fractureMainHand)
+      _.TeachAbility(w, e, fractureOffHand)
+      _.TeachAbility(w, e, increasedThreat)
+      _.TeachAbility(w, e, demonicWards)
+      _.TeachAbility(w, e, leatherSpecialization)
+      _.TeachAbility(w, e, criticalStrikes)
+      _.TeachAbility(w, e, enchants)
     }
   ],
   onEquipItem: [
@@ -370,13 +368,13 @@ const vengeance = Object.assign(Object.create(DefaultEntity), {
           totalRanks += t.rank
           let spellId = artifactMappings[t.id][t.rank - 1]
           if (artifactTraitsById[spellId] !== undefined) {
-            _.TeachAbility(e, artifactTraitsById[spellId](t.rank))
+            _.TeachAbility(w, e, artifactTraitsById[spellId](t.rank))
           } else {
             console.warn(`unrecognized artifact trait: ${spellId} (rank ${t.rank})`)
           }
         })
-        _.TeachAbility(e, artifactTraitsById[211309](totalRanks))
-        _.TeachAbility(e, artifactTraitsById[226829](totalRanks))
+        _.TeachAbility(w, e, artifactTraitsById[211309](totalRanks))
+        _.TeachAbility(w, e, artifactTraitsById[226829](totalRanks))
       }
     }
   ],
@@ -388,13 +386,13 @@ const vengeance = Object.assign(Object.create(DefaultEntity), {
           totalRanks += t.rank
           let spellId = artifactMappings[t.id][t.rank - 1]
           if (artifactTraitsById[spellId] !== undefined) {
-            _.UnteachAbility(e, artifactTraitsById[spellId](t.rank))
+            _.UnteachAbility(w, e, artifactTraitsById[spellId](t.rank))
           } else {
             console.warn(`unrecognized artifact trait: ${spellId} (rank ${t.rank})`)
           }
         })
-        _.UnteachAbility(e, artifactTraitsById[211309](totalRanks))
-        _.UnteachAbility(e, artifactTraitsById[226829](totalRanks))
+        _.UnteachAbility(w, e, artifactTraitsById[211309](totalRanks))
+        _.UnteachAbility(w, e, artifactTraitsById[226829](totalRanks))
       }
     }
   ],

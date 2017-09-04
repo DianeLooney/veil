@@ -132,7 +132,7 @@ let attributes = {
 
   ['*dr:all']: 1,
   ['*dr:physical']: 1,
-  ['*dr:Magical']: 1,
+  ['*dr:magical']: 1,
 
   ['+threat']: 1,
 

@@ -39,7 +39,19 @@ const TickWorld = (w: IWorld): void => {
   })
   w.entities.forEach(e => {
     e.modifiers.forEach(m => {
-      m.tick(w)
+      if (m._nextInterval <= w.now) {
+        m.onInterval.forEach(h => h(w, m.source, m.host))
+        if (m.intervalIsHasted) {
+          m._nextInterval += w._second * m.interval / (1 + m.host['haste'])
+        } else {
+          m._nextInterval += w._second * m.interval
+        }
+      }
+      if (m._expires <= w.now) {
+        m.drop(w, m.host)
+        return
+      }
+      m.onTick.forEach(h => h(w, m.source, m.host))
     })
   })
   w.entities.forEach(e => {
@@ -158,17 +170,17 @@ const UnequipItem = (w: IWorld, e: IEntity, slot: string): void => {
   //TODO: Some reporting
 }
 export { UnequipItem }
-const CastAbilityByName = (e: IEntity, slug: string, ...targets: IEntity[]): void => {
+const CastAbilityByName = (w: IWorld, e: IEntity, slug: string, ...targets: IEntity[]): void => {
   let a = e.abilities[slug]
   if (a) {
-    a.cast(this, ...targets)
+    a.cast(w, ...targets)
   } else {
     //TODO: some error message
   }
 }
 export { CastAbilityByName }
-const CastAbilityByReference = (e: IEntity, a: IAbility, ...targets: IEntity[]): void => {
-  a.cast(this, ...targets)
+const CastAbilityByReference = (w: IWorld, e: IEntity, a: IAbility, ...targets: IEntity[]): void => {
+  a.cast(w, ...targets)
 }
 export { CastAbilityByReference }
 const DealDamage = (e: IEntity, t: IEntity, args: any): void => {
@@ -236,9 +248,9 @@ const DealDamage = (e: IEntity, t: IEntity, args: any): void => {
     report('DAMAGE_TAKEN', args)
   } else {
     t.health = 0
-
+    debug(`unit died from:${args.source.slug}\t${args.target.slug}\t${args.amount}\t${args.ability.slug}`)
     report('DAMAGE_TAKEN', args)
-    this.kill(args.source, args.ability)
+    Kill(args.source, args.ability)
   }
 }
 export { DealDamage }
@@ -265,15 +277,15 @@ const Kill = (e: IEntity, a: IAbility): void => {
   report('ENTITY_DIED', { unit: e, killingBlow: a })
 }
 export { Kill }
-const TeachAbility = (e: IEntity, a: IAbility): void => {
+const TeachAbility = (w: IWorld, e: IEntity, a: IAbility): void => {
   if (!e.abilities[a.slug]) {
     e.abilities[a.slug] = a
-    a.learn(this, e)
-    report('ABILITY_LEARNED', { entity: this, ability: a })
+    a.learn(w, e)
+    report('ABILITY_LEARNED', { entity: e, ability: a })
   }
 }
 export { TeachAbility }
-const UnteachAbility = (e: IEntity, a: IAbility): void => {
+const UnteachAbility = (w: IWorld, e: IEntity, a: IAbility): void => {
   if (e.abilities[a.slug]) {
     e.abilities[a.slug].unlearn(this, e)
     e.abilities[a.slug] = undefined
@@ -281,9 +293,9 @@ const UnteachAbility = (e: IEntity, a: IAbility): void => {
   }
 }
 export { UnteachAbility }
-const ApplyModifier = (e: IEntity, m: IModifier): void => {
+const ApplyModifier = (w: IWorld, e: IEntity, m: IModifier): void => {
   e.modifiers.push(m)
-  m.apply(this, e)
+  m.apply(w, e)
   report('MODIFIER_GAINED', { entity: e, modifier: m })
 }
 export { ApplyModifier }

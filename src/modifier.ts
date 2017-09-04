@@ -11,7 +11,7 @@ interface IDropFunc {
   (e: IEntity): void
 }
 interface ITickFunc {
-  (w: IWorld, e: IEntity): void
+  (w: IWorld, s: IEntity, e: IEntity): void
 }
 interface IModifier {
   id: number
@@ -31,7 +31,6 @@ interface IModifier {
   duration: number
   apply(w: IWorld, e: IEntity): void
   drop(w: IWorld, e: IEntity): void
-  tick(w: IWorld): void
 }
 const DefaultModifier: IModifier = {
   id: 0,
@@ -96,6 +95,7 @@ const DefaultModifier: IModifier = {
     }
     let x = Object.create(this) as IModifier
     e.modifiers.push(x)
+    console.log(w)
     x._expires = w.now + x.duration * w._second
     if (x.interval) {
       x._nextInterval = w.now + x.interval * w._second
@@ -133,21 +133,6 @@ const DefaultModifier: IModifier = {
     this.onDrop.forEach(h => h(e))
     e.modifiers = e.modifiers.filter(x => x != this)
     debug(`Dropping modifier ${this.slug} from ${e.slug}`)
-  },
-  tick(w: IWorld): void {
-    if (this._nextInterval <= w.now) {
-      this.onInterval.forEach(h => h(w, this.source, this.host))
-      if (this.intervalIsHasted) {
-        this._nextInterval += w._second * this.interval / (1 + this.host['haste'])
-      } else {
-        this._nextInterval += w._second * this.interval
-      }
-    }
-    if (this._expires <= w.now) {
-      this.drop(w, this.host)
-      return
-    }
-    this.onTick.forEach(h => h(w, this.host))
   }
 }
 

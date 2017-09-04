@@ -47,7 +47,7 @@ setInterval(() => {
   _.TickWorld(w)
   if (first && !_.IsOnGCD(e)) {
     first = false
-    _.CastAbilityByName(e, 'sigil-of-flame')
+    _.CastAbilityByName(w, e, 'sigil-of-flame')
     /*
     w.castAbilityByName(e, 'demon-spikes')
     w.castAbilityByName(e, 'spirit-bomb', idiot)

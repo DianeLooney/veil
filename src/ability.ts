@@ -56,7 +56,7 @@ const activeUnlearn = function(w: IWorld, e: IEntity): void {
 }
 const activeCast = function(w: IWorld, ...targets: IEntity[]): void {
   verbose(`attempting to cast ${this.slug} for ${this.host.slug}`)
-  if (this.onGCD && this.host.isOnGCD()) {
+  if (this.onGCD && _.IsOnGCD(this.host)) {
     verbose(`rejected cast of ${this.slug} for ${this.host.slug}: on gcd`)
     return
   }
@@ -82,7 +82,7 @@ const activeCast = function(w: IWorld, ...targets: IEntity[]): void {
   }
 
   if (this.triggersGCD) {
-    this.host.triggerGCD()
+    _.TriggerGCD(this.host)
   }
   report('ABILITY_CASTED', { entity: this.host, spell: this })
   debug(`casted ${this.slug} for ${this.host.slug}`)
