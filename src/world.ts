@@ -6,6 +6,7 @@ import { IItem } from './item'
 import report from './report'
 import * as _debug from 'debug'
 const debug = _debug('world')
+const debugVerbose = _debug('world:verbose')
 
 class World {
   _second: number
@@ -49,6 +50,23 @@ class World {
         }
         return true
       })
+    })
+    this.entities.forEach(e => {
+      for (let k in e.abilities) {
+        let a = e.abilities[k]
+        if (a.cooldown == 0 || !a.cooldown) {
+          continue
+        }
+        a.hastedRecharges.forEach(cd => {
+          let cap = 1
+          if (e[cd + ':cap'] !== undefined) {
+            cap = e[cd + ':cap']
+          }
+          if (e[cd] !== cap) {
+            e[cd] = Math.min(cap, e[cd] + e['spell:recharge-rate:hasted'] * this._tickDelta / (this._second * a.cooldown))
+          }
+        })
+      }
     })
     this.actors.forEach(a => {
       a.act(this)
@@ -96,6 +114,7 @@ class World {
         a[name] *= amount
         break
       default:
+        a[name] = amount
       // TODO: Error reporting
     }
   }
@@ -108,6 +127,7 @@ class World {
         a[name] /= amount
         break
       default:
+        a[name] = undefined
       // TODO: Error reporting
     }
   }
@@ -156,17 +176,17 @@ class World {
         let s: IEntity = args.source
         if (args.mhDamageNorm) {
           let x = s['mainHand:damage:normalized'] * args.mhDamageNorm * s['damage']
-          debug(`adding ${x} damage from mainHand`)
+          debugVerbose(`adding ${x} damage from mainHand`)
           a += x
         }
         if (args.ohDamageNorm) {
           let x = s['offHand:damage:normalized'] * args.ohDamageNorm * s['damage']
-          debug(`adding ${x} damage from offHand`)
+          debugVerbose(`adding ${x} damage from offHand`)
           a += x
         }
         if (args.attackPower) {
           let x = s['attackpower'] * args.attackPower
-          debug(`adding ${x} damage from arrackpower`)
+          debugVerbose(`adding ${x} damage from arrackpower`)
           a += x
         } /*
         if (args.mhDamageRaw) {
@@ -189,18 +209,18 @@ class World {
       if (Math.random() <= args.source['crit']) {
         args.amount *= 2
         args.didCrit = true
-        debug('spell did crit')
+        debugVerbose('spell did crit')
       }
     }
     let dr: number = t['*dr:all']
-    debug(`baseline dr: ${t['*dr:all']}`)
+    debugVerbose(`baseline dr: ${t['*dr:all']}`)
     if (args.type == 'PHYSICAL') {
-      debug(`physical dr: ${t['*dr:physical']}`)
+      debugVerbose(`physical dr: ${t['*dr:physical']}`)
       dr *= t['*dr:physical']
-      debug(`armor dr: ${t['armor']}`)
+      debugVerbose(`armor dr: ${t['armor']}`)
       dr *= t['armor']
     } else {
-      debug(`magic dr: ${t['*dr:magical']}`)
+      debugVerbose(`magic dr: ${t['*dr:magical']}`)
       dr *= t['*dr:magical']
     }
     args.amount *= dr
@@ -255,7 +275,7 @@ class World {
   }
   applyModifier(e: IEntity, m: IModifier): void {
     e.modifiers.push(m)
-    m.apply(e)
+    m.apply(this, e)
     report('MODIFIER_GAINED', { entity: e, modifier: m })
   }
   unapplyModifier(e: IEntity, m: IModifier): void {

@@ -141,6 +141,11 @@ let attributes = {
   ['gcd:time']: function(e) {
     return Math.max(e['gcd:min'], e['gcd:base'] / (1.0 + e['haste']))
   },
-  ['gcd:remaining']: 0
+  ['gcd:remaining']: 0,
+
+  ['*spell:recharge-rate:base']: 1,
+  ['spell:recharge-rate:hasted']: function(e) {
+    return e['*spell:recharge-rate:base'] * (1 + e['haste'])
+  }
 }
 export default attributes

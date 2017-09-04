@@ -40,11 +40,18 @@ let dump = function(e: IEntity): void {
   console.log('*damage', e['*damage'])
 }
 dump(e)
+let first = true
 setInterval(() => {
   w.tick()
-  w.castAbilityByName(e, 'spirit-bomb', idiot)
-  w.castAbilityByName(e, 'fracture', idiot)
-  w.castAbilityByName(e, 'shear', idiot)
+  if (first && !e.isOnGCD()) {
+    first = false
+    w.castAbilityByName(e, 'sigil-of-flame')
+    /*
+    w.castAbilityByName(e, 'demon-spikes')
+    w.castAbilityByName(e, 'spirit-bomb', idiot)
+    w.castAbilityByName(e, 'fracture', idiot)
+    w.castAbilityByName(e, 'shear', idiot)*/
+  }
   //console.log(e['fragment:count'])
 }, 40)
 

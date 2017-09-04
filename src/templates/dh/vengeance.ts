@@ -1,8 +1,8 @@
 import { IEntity, DefaultEntity } from '../../Entity'
 import { IItem } from '../../item'
 import World from '../../world'
-import { IAbility, DefaultAbility, DefaultPassive } from '../../Ability.js'
-import { IModifier } from '../../Modifier'
+import { IAbility, DefaultAbility, DefaultPassive } from '../../Ability'
+import { DefaultModifier, IModifier } from '../../Modifier'
 import { sequence } from '../../rng'
 import report from '../../report'
 import * as _debug from 'debug'
@@ -45,7 +45,6 @@ const consumeFragment = function(w: World, e: IEntity, count: number): void {
     })
   }
 }
-
 const shear = Object.assign(Object.create(DefaultAbility), {
   id: 203782,
   slug: 'shear',
@@ -140,7 +139,7 @@ const spiritBomb = Object.assign(Object.create(DefaultAbility), {
       e.delays.push({
         when: w.now + 0.125 * w._second,
         func: (w: World, e: IEntity): void => {
-          //todo: target units in range of the caster intsead of his target
+          //TODO: target units in range of the caster intsead of his target
           w.dealDamage(e, t, {
             source: e,
             target: t,
@@ -148,9 +147,90 @@ const spiritBomb = Object.assign(Object.create(DefaultAbility), {
             attackPower: 1.8 * x * e['damage'],
             ability: spiritBomb
           })
+          //TODO: Apply healing modifier
         }
       })
       debug(`spent ${x} fragments on spirit-bomb`)
+    }
+  ]
+})
+const sigilOfFlameModifier = Object.assign(Object.create(DefaultModifier), {
+  slug: 'sigil-of-flame-modifier',
+  onInterval: [
+    (w: World, s: IEntity, e: IEntity) => {
+      console.log('this:', this)
+      w.dealDamage(this.source, e, {
+        source: this.source,
+        target: e,
+        type: 'FIRE',
+        attackPower: 1.86 * 0.95 * e['damage'],
+        ability: sigilOfFlame
+      })
+    }
+  ],
+  interval: 1,
+  duration: 6
+}) as IModifier
+const sigilOfFlame = Object.assign(Object.create(DefaultAbility), {
+  slug: 'sigil-of-flame',
+  cooldown: 30,
+  recharges: ['ability:sigil-of-flame:cooldown'],
+  onCast: [
+    (w: World, e: IEntity, t: IEntity) => {
+      e.delays.push({
+        when: w.now + 2 * w._second,
+        func: (w: World, e: IEntity): void => {
+          //TODO: Make this an AE spell
+          w.dealDamage(e, t, {
+            source: e,
+            target: t,
+            type: 'FIRE',
+            attackPower: 1.86 * 0.95 * e['damage'],
+            ability: sigilOfFlame
+          })
+          let x = Object.assign(Object.create(sigilOfFlameModifier), { source: e })
+          console.log(x.source)
+          w.applyModifier(t, x)
+        }
+      })
+    }
+  ]
+}) as IAbility
+const demonSpikesBuff = Object.assign(Object.create(DefaultModifier), {
+  slug: 'demon-spikes',
+  stackMode: 'EXTEND',
+  duration: 6,
+  attributes: {
+    ['+parry']: 0.2
+  }
+}) as IModifier
+const defensiveSpikesBuff = Object.assign(Object.create(DefaultModifier), {
+  slug: 'defensive-spikes',
+  duration: 3,
+  attributes: {
+    ['+parry']: 0.1
+  }
+}) as IModifier
+const demonSpikesSpell = Object.assign(Object.create(DefaultAbility), {
+  slug: 'demon-spikes',
+  cooldown: 12,
+
+  hastedRecharges: ['ability:demon-spikes:charges'],
+  cost: {
+    'ability:demon-spikes:charges': 1,
+    'pain:current': 20
+  },
+  attributes: {
+    'ability:demon-spikes:charges': 2,
+    'ability:demon-spikes:charges:cap': 2
+  },
+  onGCD: false,
+  triggersGCD: false,
+  onCast: [
+    (w: World, e: IEntity, t: IEntity) => {
+      debug(`Current charges of demon-pikes: ${e['ability:demon-spikes:charges']}`)
+      demonSpikesBuff.apply(w, e)
+      defensiveSpikesBuff.apply(w, e)
     }
   ]
 })
@@ -268,6 +348,8 @@ const vengeance = Object.assign(Object.create(DefaultEntity), {
       w.teachAbility(e, shear)
       w.teachAbility(e, fracture)
       w.teachAbility(e, spiritBomb)
+      w.teachAbility(e, demonSpikesSpell)
+      w.teachAbility(e, sigilOfFlame)
 
       w.teachAbility(e, fractureMainHand)
       w.teachAbility(e, fractureOffHand)
@@ -331,7 +413,9 @@ vengeance._attributes = Object.assign(DefaultEntity._attributes, {
   ['*damage']: 1,
   ['damage']: function(e) {
     return e['*damage'] * (1 + e['vers:damage-done'])
-  }
+  },
+  ['artifact:defensive-spikes:amount']: 0.1,
+  ['artifact:defensive-spikes:duration']: 0.1
 })
 export default vengeance
 
