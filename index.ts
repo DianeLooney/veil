@@ -10,9 +10,14 @@ import consts from './src/consts'
 import * as _debug from 'debug'
 const debug = _debug('index')
 import * as microtime from 'microtime'
+var now = require('performance-now')
+import { start, end, dump } from './src/perf'
 
-for (let run = 0; run < 100; run++) {
-  let lap = microtime.now()
+let total = 0
+let runs = 100
+for (let run = 0; run < runs; run++) {
+  let startTime = now()
+  let endTime
   const w = DefaultWorld() as IWorld
 
   const e = Object.assign({}, savedya) as IEntity
@@ -26,9 +31,12 @@ for (let run = 0; run < 100; run++) {
 
   let first = true
   for (let i = 0; i < 40 * 300; i++) {
+    start('tick')
     _.TickWorld(w)
+    end('tick')
 
     if (!_.IsOnGCD(e)) {
+      start('casts')
       _.CastAbilityByName(w, e, 'empower-wards')
       _.CastAbilityByName(w, e, 'demon-spikes')
       _.CastAbilityByName(w, e, 'soul-carver', idiot)
@@ -39,9 +47,11 @@ for (let run = 0; run < 100; run++) {
       }
       _.CastAbilityByName(w, e, 'fracture', idiot)
       _.CastAbilityByName(w, e, 'shear', idiot)
+      end('casts')
     }
   }
-  console.log(w.entities.length)
-  console.log(savedya)
-  console.log('lap:', microtime.now() - lap)
+  endTime = now()
+  total += endTime - startTime
 }
+console.log('Average time:', total / runs)
+dump()

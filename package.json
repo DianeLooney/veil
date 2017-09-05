@@ -6,7 +6,8 @@
   "dependencies": {
     "babylon": "^6.18.0",
     "debug": "^3.0.1",
-    "microtime": "^2.1.6"
+    "microtime": "^2.1.6",
+    "performance-now": "^2.1.0"
   },
   "devDependencies": {
     "@types/node": "^8.0.26",

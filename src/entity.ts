@@ -3,6 +3,7 @@ import { IAbility } from './ability'
 import { IWorld } from './world'
 import { IModifier } from './modifier'
 import { IItem } from './item'
+import { ITickerTemplate, ITickerInstance, IModifierTemplate, IModifierInstance, IPassiveTemplate } from './modifier'
 import consts from './consts'
 import attributes from './templates/playerAttributes'
 import bossAttributes from './templates/bossAttributes'
@@ -75,7 +76,9 @@ interface IEntity {
   rng: { [key: string]: any }
   abilities: { [key: string]: IAbility }
   modifiers: IModifier[]
-
+  tickers: ITickerInstance[]
+  mods: IModifierInstance[]
+  passives: IPassiveTemplate[]
   onInit: IInitFunc[]
   onSpawn: ISpawnFunc[]
   onDespawn: ISpawnFunc[]
@@ -119,6 +122,9 @@ const DefaultEntity = function(): IEntity {
     },
     abilities: {},
     modifiers: [],
+    tickers: [],
+    mods: [],
+    passives: [],
 
     onInit: [],
     onSpawn: [],
@@ -162,6 +168,9 @@ const DefaultBossEntity = function(): IEntity {
     },
     abilities: {},
     modifiers: [],
+    tickers: [],
+    mods: [],
+    passives: [],
 
     onInit: [],
     onSpawn: [],

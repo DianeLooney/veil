@@ -3,11 +3,12 @@ import { IItem } from '../../item'
 import { IWorld } from '../../world'
 import * as _ from '../../actions'
 import { IAbility, DefaultAbility, DefaultPassive } from '../../Ability'
-import { DefaultModifier, IModifier } from '../../Modifier'
+import { DefaultModifier, IModifier, IModifierTemplate, IPassiveTemplate, ITickerTemplate } from '../../Modifier'
 import { sequence, rppm } from '../../rng'
 import report from '../../report'
 import * as _debug from 'debug'
 const debug = _debug('vengeance')
+const verbose = _debug('verbose:vengeance')
 
 import artifactMappings from '../../consts/artifactMappings'
 const soulFragmentConsume = Object.assign(Object.create(DefaultPassive), {
@@ -45,7 +46,7 @@ const consumeFragment = function(w: IWorld, e: IEntity, count: number): void {
       spell: soulFragmentConsume
     })
     if (e['trait:painbringer:rank'] !== undefined && e['trait:painbringer:rank'] >= 1) {
-      _.ApplyModifier(w, e, Object.assign(Object.create(painbringerModifier), { source: e }) as IModifier)
+      _.ApplyMod(w, e, e, painbringerMod)
     }
     if (e['trait:fueled-by-pain:rank'] !== undefined && e['trait:fueled-by-pain:rank'] >= 1) {
       if (!e.rng['fueled-by-pain']) {
@@ -57,14 +58,16 @@ const consumeFragment = function(w: IWorld, e: IEntity, count: number): void {
     }
   }
 }
-const painbringerModifier = Object.assign(Object.create(DefaultModifier), {
+const painbringerMod: IModifierTemplate = {
+  id: 212988,
   slug: 'painbringer',
   stackMode: 'DISJOINT',
   attributes: {
     '*dr:all': 0.97
   },
-  duration: 4
-})
+  duration: 4,
+  durationIsHasted: false
+}
 const shear = Object.assign(Object.create(DefaultAbility), {
   id: 203782,
   slug: 'shear',
@@ -184,11 +187,17 @@ const spiritBomb = Object.assign(Object.create(DefaultAbility), {
     }
   ]
 })
-
-const sigilOfFlameModifier = Object.assign(Object.create(DefaultModifier), {
-  slug: 'sigil-of-flame-modifier',
+const sigilOfFlameTicker: ITickerTemplate = {
+  id: 204598,
+  slug: 'sigil-of-flame',
+  stackMode: 'EXTEND',
+  duration: 6,
+  durationIsHasted: false,
+  attributes: {},
+  onApply: [],
+  onDrop: [],
   onInterval: [
-    (w: IWorld, s: IEntity, e: IEntity) => {
+    (w: IWorld, s: IEntity, e: IEntity): void => {
       _.DealDamage(s, e, {
         source: s,
         target: e,
@@ -199,15 +208,16 @@ const sigilOfFlameModifier = Object.assign(Object.create(DefaultModifier), {
     }
   ],
   interval: 1,
-  duration: 6
-}) as IModifier
+  intervalIsHasted: false
+}
 const sigilOfFlame = Object.assign(Object.create(DefaultAbility), {
   slug: 'sigil-of-flame',
   cooldown: 30,
-  recharges: ['ability:sigil-of-flame:cooldown'],
+  recharges: 'ability:sigil-of-flame:cooldown',
   cost: { ['ability:sigil-of-flame:cooldown']: 1 },
   attributes: {
-    'ability:sigil-of-flame:cooldown': 1
+    'ability:sigil-of-flame:cooldown': 1,
+    'ability:sigil-of-flame:cooldown:cap': 1
   },
   onCast: [
     (w: IWorld, e: IEntity, t: IEntity) => {
@@ -224,8 +234,7 @@ const sigilOfFlame = Object.assign(Object.create(DefaultAbility), {
               attackPower: 1.86 * 0.95 * e['damage'],
               ability: sigilOfFlame
             })
-            let z = Object.assign(Object.create(sigilOfFlameModifier), { source: e })
-            _.ApplyModifier(w, y, z)
+            _.ApplyTicker(w, e, y, sigilOfFlameTicker)
           })
         }
       })
@@ -233,21 +242,23 @@ const sigilOfFlame = Object.assign(Object.create(DefaultAbility), {
   ]
 }) as IAbility
 
-const demonSpikesBuff = Object.assign(Object.create(DefaultModifier), {
+const demonSpikesMod: IModifierTemplate = {
+  id: 203819,
   slug: 'demon-spikes',
   stackMode: 'EXTEND',
   duration: 6,
-  attributes: {
-    ['+parry']: 0.2
-  }
-}) as IModifier
-const defensiveSpikesBuff = Object.assign(Object.create(DefaultModifier), {
+  durationIsHasted: false,
+  attributes: { '+parry': 0.2 }
+}
+const defensiveSpikesMod: IModifierTemplate = {
+  id: 212871,
   slug: 'defensive-spikes',
+  stackMode: 'EXTEND',
   duration: 3,
-  attributes: {
-    ['+parry']: 0.1
-  }
-}) as IModifier
+  durationIsHasted: false,
+  attributes: { '+parry': 0.1 }
+}
+
 const demonSpikesSpell = Object.assign(Object.create(DefaultAbility), {
   slug: 'demon-spikes',
   cooldown: 12,
@@ -265,30 +276,26 @@ const demonSpikesSpell = Object.assign(Object.create(DefaultAbility), {
   triggersGCD: false,
   onCast: [
     (w: IWorld, e: IEntity, t: IEntity) => {
-      debug(`Current charges of demon-pikes: ${e['ability:demon-spikes:charges']}`)
-      _.ApplyModifier(
-        w,
-        e,
-        Object.assign(Object.create(demonSpikesBuff), {
-          attributes: {
-            ['+parry']: 0.2,
-            ['*dr:physical']: 1 - Math.min(0.99, 0.12 + e['mastery:demon-spikes'])
-          }
-        })
-      )
-
+      let x = Object.assign({}, demonSpikesMod) as IModifierTemplate
+      x.attributes['*dr:physical'] = 1 - Math.min(0.99, 0.12 + e['mastery:demon-spikes'])
+      _.ApplyMod(w, e, e, demonSpikesMod)
       if (e['trait:defensive-spikes:rank'] !== undefined && e['trait:defensive-spikes:rank'] >= 1) {
-        defensiveSpikesBuff.apply(w, e)
+        _.ApplyMod(w, e, e, defensiveSpikesMod)
       }
     }
   ]
 })
-
-const immolationAuraModifier = Object.assign(Object.create(DefaultModifier), {
+const immolationAuraTicker: ITickerTemplate = {
+  id: 223061,
   slug: 'immolation-aura',
   stackMode: 'DISJOINT',
+  duration: 6,
+  durationIsHasted: false,
+  attributes: {},
+  onApply: [],
+  onDrop: [],
   onInterval: [
-    (w: IWorld, s: IEntity, e: IEntity) => {
+    (w: IWorld, s: IEntity, e: IEntity): void => {
       e['pain:current'] = Math.min(e['pain:max'], e['pain:current'] + 20)
       _.EnemiesTouchingRadius(w, e.position, 8).forEach(x => {
         _.DealDamage(s, x, {
@@ -302,8 +309,8 @@ const immolationAuraModifier = Object.assign(Object.create(DefaultModifier), {
     }
   ],
   interval: 1,
-  duration: 6
-}) as IModifier
+  intervalIsHasted: false
+}
 const immolationAura = Object.assign(Object.create(DefaultAbility), {
   slug: 'immolation-aura',
   cooldown: 15,
@@ -322,39 +329,43 @@ const immolationAura = Object.assign(Object.create(DefaultAbility), {
           ability: immolationAura
         })
       })
-      _.ApplyModifier(w, e, Object.assign(Object.create(immolationAuraModifier), { source: e }) as IModifier)
+      _.ApplyTicker(w, e, e, immolationAuraTicker)
     }
   ]
 }) as IAbility
 
-const soulCarverDebuff = Object.assign(Object.create(DefaultModifier), {
-  slug: 'immolation-aura',
+const soulCarverTicker: ITickerTemplate = {
+  id: -2,
+  slug: 'soul-carver',
+  stackMode: 'DISJOINT',
+  duration: 3,
+  durationIsHasted: false,
+  attributes: {},
+  onApply: [],
+  onDrop: [],
   onInterval: [
-    (w: IWorld, s: IEntity, e: IEntity) => {
-      _.EnemiesTouchingRadius(w, e.position, 8).forEach(x => {
-        spawnFragment(w, e, false)
-        _.DealDamage(s, e, {
-          source: s,
-          target: e,
-          type: 'FIRE',
-          attackpower: 1.55 * 0.95 * e['damage'], //TODO: Add fire damage modifier in here
-          ability: soulCarver
-        })
+    (w: IWorld, s: IEntity, e: IEntity): void => {
+      spawnFragment(w, s, false)
+      _.DealDamage(s, e, {
+        source: s,
+        target: e,
+        type: 'FIRE',
+        attackpower: 1.55 * 0.95 * s['damage'], //TODO: Add fire damage modifier in here
+        ability: soulCarver
       })
     }
   ],
   interval: 1,
-  duration: 3
-})
+  intervalIsHasted: false
+}
 const soulCarver = Object.assign(Object.create(DefaultAbility), {
   slug: 'soul-carver',
   cooldown: 45,
-  recharges: ['ability:soul-carver:cooldown'],
+  recharges: 'ability:soul-carver:cooldown',
   cost: { 'ability:soul-carver:cooldown': 1 },
-  attributes: { 'ability:soul-carver:cooldown': 1 },
+  attributes: { 'ability:soul-carver:cooldown': 1, 'ability:soul-carver:cooldown:cap': 1 },
   onCast: [
     (w: IWorld, e: IEntity, t: IEntity) => {
-      spawnFragment(w, e, false)
       spawnFragment(w, e, false)
       _.DealDamage(e, t, {
         source: e,
@@ -363,6 +374,7 @@ const soulCarver = Object.assign(Object.create(DefaultAbility), {
         'mainHand:damage:normalized': 5.07 * 0.95 * e['damage'], //TODO: Add fire damage modifier in here
         ability: soulCarver
       })
+      spawnFragment(w, e, false)
       _.DealDamage(e, t, {
         source: e,
         target: t,
@@ -370,43 +382,47 @@ const soulCarver = Object.assign(Object.create(DefaultAbility), {
         'offHand:damage:normalized': 5.07 * 0.95 * e['damage'], //TODO: Add fire damage modifier in here
         ability: soulCarver
       })
+      _.ApplyTicker(w, e, t, soulCarverTicker)
     }
   ]
 })
-
-const empowerWardsBuff = Object.assign(Object.create(DefaultModifier), {
-  slug: 'empower-wards-modifier',
-  duration: 6,
+const empowerWardsMod: IModifierTemplate = {
+  id: 218256,
+  slug: 'empower-wards',
+  stackMode: 'DISJOINT',
   attributes: {
     '*dr:magical': 0.7
-  }
-}) as IModifier
+  },
+  duration: 6,
+  durationIsHasted: false
+}
 const empowerWards = Object.assign(Object.create(DefaultAbility), {
   slug: 'empower-wards',
   cooldown: 20,
-  recharges: ['ability:empower-wards:cooldown'],
+  recharges: 'ability:empower-wards:cooldown',
   cost: {
     'ability:empower-wards:cooldown': 1
   },
   attributes: {
-    'ability:empower-wards:cooldown': 1
+    'ability:empower-wards:cooldown': 1,
+    'ability:empower-wards:cooldown:cap': 1
   },
   onGCD: false,
   triggersGCD: false,
   onCast: [
     (w: IWorld, e: IEntity) => {
-      empowerWardsBuff.apply(w, e)
+      _.ApplyMod(w, e, e, empowerWardsMod)
     }
   ]
 }) as IAbility
-const increasedThreat = Object.assign(Object.create(DefaultPassive), {
-  id: 189926,
-  slug: 'increased-threat',
+const increasedThreatPassive: IPassiveTemplate = {
+  id: 218256,
+  slug: 'empower-wards',
   attributes: {
     '+threat': 9
   }
-})
-const demonicWards = Object.assign(Object.create(DefaultPassive), {
+}
+const demonicWardsPassive: IPassiveTemplate = {
   id: 203513,
   slug: 'demonic-wards',
   attributes: {
@@ -416,28 +432,28 @@ const demonicWards = Object.assign(Object.create(DefaultPassive), {
     '*stam:rating': 1.55,
     '*armor': 1.75
   }
-})
-const leatherSpecialization = Object.assign(Object.create(DefaultPassive), {
+}
+const leatherSpecializationPassive: IPassiveTemplate = {
   id: 226359,
   slug: 'leather-specialization',
   attributes: {
     '*stam:rating': 1.05
   }
-})
-const criticalStrikes = Object.assign(Object.create(DefaultPassive), {
+}
+const criticalStrikesPassive: IPassiveTemplate = {
   id: 221351,
   slug: 'critical-strikes',
   attributes: {
     '+crit': 0.05
   }
-})
-const arcaneAcuity = Object.assign(Object.create(DefaultPassive), {
+}
+const arcaneAcuityPassive: IPassiveTemplate = {
   id: 154742,
   slug: 'arcane-acuity',
   attributes: {
     '+crit': 0.01
   }
-})
+}
 const artifactTraitsById = {
   212819: function willOfTheIllidari(rank: number): any {
     return Object.assign(Object.create(DefaultPassive), {
@@ -533,20 +549,18 @@ const artifactTraitsById = {
     })
   }
 }
-const enchants = Object.assign(Object.create(DefaultPassive), {
+const enchantsPassive: IPassiveTemplate = {
   id: -1,
   slug: 'enchants-temporary',
   attributes: {
     '+agi:rating': 400,
     '+crit:rating': 400
   }
-})
+}
 const DefaultVengeance = function() {
   let x = Object.assign(DefaultEntity(), {
     onInit: [
       function(w: IWorld, e: IEntity) {
-        _.TeachAbility(w, e, arcaneAcuity) //TODO: Only load of belfs
-
         _.TeachAbility(w, e, shear)
         _.TeachAbility(w, e, fracture)
         _.TeachAbility(w, e, spiritBomb)
@@ -558,11 +572,14 @@ const DefaultVengeance = function() {
 
         _.TeachAbility(w, e, fractureMainHand)
         _.TeachAbility(w, e, fractureOffHand)
-        _.TeachAbility(w, e, increasedThreat)
-        _.TeachAbility(w, e, demonicWards)
-        _.TeachAbility(w, e, leatherSpecialization)
-        _.TeachAbility(w, e, criticalStrikes)
-        _.TeachAbility(w, e, enchants)
+
+        _.TeachPassive(w, e, arcaneAcuityPassive) //TODO: Only load of belfs
+        _.TeachPassive(w, e, leatherSpecializationPassive)
+        _.TeachPassive(w, e, criticalStrikesPassive)
+        _.TeachPassive(w, e, enchantsPassive)
+
+        _.TeachPassive(w, e, increasedThreatPassive)
+        _.TeachPassive(w, e, demonicWardsPassive)
       }
     ],
     onEquipItem: [
@@ -575,7 +592,7 @@ const DefaultVengeance = function() {
             if (artifactTraitsById[spellId] !== undefined) {
               _.TeachAbility(w, e, artifactTraitsById[spellId](t.rank))
             } else {
-              console.warn(`unrecognized artifact trait: ${spellId} (rank ${t.rank})`)
+              verbose(`unrecognized artifact trait: ${spellId} (rank ${t.rank})`)
             }
           })
           _.TeachAbility(w, e, artifactTraitsById[211309](totalRanks))
@@ -593,7 +610,7 @@ const DefaultVengeance = function() {
             if (artifactTraitsById[spellId] !== undefined) {
               _.UnteachAbility(w, e, artifactTraitsById[spellId](t.rank))
             } else {
-              console.warn(`unrecognized artifact trait: ${spellId} (rank ${t.rank})`)
+              verbose(`unrecognized artifact trait: ${spellId} (rank ${t.rank})`)
             }
           })
           _.UnteachAbility(w, e, artifactTraitsById[211309](totalRanks))

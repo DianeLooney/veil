@@ -143,7 +143,7 @@ let attributes = {
   },
   ['gcd:remaining']: 0,
 
-  ['*spell:recharge-rate:base']: 1,
+  ['*spell:recharge-rate:base']: 40.0 / 1000.0,
   ['spell:recharge-rate:hasted']: function(e) {
     return e['*spell:recharge-rate:base'] * (1 + e['haste'])
   },

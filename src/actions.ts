@@ -1,13 +1,14 @@
 import { IAbility } from './ability'
-import { IModifier } from './modifier'
+import { IModifier, ITickerTemplate, IModifierTemplate, IPassiveTemplate, ITickerInstance, IModifierInstance } from './modifier'
 import { IEntity, IPosition } from './entity'
 import { IItem } from './item'
 import { IWorld } from './world'
 import { parse, build } from './templates/attributeParser'
 import report from './report'
+import { start, end } from './perf'
 import * as _debug from 'debug'
 const debug = _debug('actions')
-const debugVerbose = _debug('actions:verbose')
+const verbose = _debug('actions:verbose')
 
 const SpawnEntity = (w: IWorld, e: IEntity): void => {
   w.entities.push(e)
@@ -32,11 +33,14 @@ const DespawnEntity = (w: IWorld, e: IEntity): void => {
 export { DespawnEntity }
 const TickWorld = (w: IWorld): void => {
   w.now += w._tickDelta
+  start('loop1')
   w.entities.forEach(e => {
     if (e['gcd:remaining'] !== undefined && e['gcd:remaining'] > 0) {
       e['gcd:remaining'] -= w._tickDelta
     }
   })
+  end('loop1')
+  start('loop2')
   w.entities.forEach(e => {
     e.modifiers.forEach(m => {
       if (m._nextInterval <= w.now) {
@@ -53,7 +57,28 @@ const TickWorld = (w: IWorld): void => {
       }
       m.onTick.forEach(h => h(w, m.source, m.host))
     })
+    while (e.tickers[0] !== undefined && e.tickers[0].nextTick <= w.now) {
+      let x = e.tickers.shift()
+      x.template.onInterval.forEach(h => h(w, x.source, e))
+      let next = Math.min(
+        x.expires,
+        x.nextTick + w._second * x.template.interval * (x.template.intervalIsHasted ? 1 / (1 + x.source['haste']) : 1)
+      )
+      if (x.nextTick > w.now) {
+        e.tickers.push(x)
+        e.tickers.sort((x, y) => x.nextTick - y.nextTick)
+      }
+    }
+    while (e.mods[0] !== undefined && e.mods[0].expires <= w.now) {
+      let x = e.mods.shift()
+      for (let a in x.template.attributes) {
+        LoseAttribute(e, a, x.template.attributes[a])
+      }
+      verbose(`Expired mod ${x.template.slug} at ${w.now / 1000}`)
+    }
   })
+  end('loop2')
+  start('loop3')
   w.entities.forEach(e => {
     e.delays = e.delays.filter(d => {
       if (d.when <= w.now) {
@@ -63,30 +88,37 @@ const TickWorld = (w: IWorld): void => {
       return true
     })
   })
+  end('loop3')
+  start('loop4')
   w.entities.forEach(e => {
+    let unhastedRate = e['spell:recharge-rate:unhasted']
+    let hastedRate = e['spell:recharge-rate:hasted']
     for (let k in e.abilities) {
       let a = e.abilities[k]
-      if (a.cooldown == 0 || !a.cooldown) {
+      if (a.cooldown == 0 || !a.cooldown || !a.recharges) {
         continue
       }
-      a.recharges.forEach(cd => {
-        let cap = 1
-        if (e[cd + ':cap'] !== undefined) {
-          cap = e[cd + ':cap']
-        }
-        e[cd] = Math.min(cap, e[cd] + e['spell:recharge-rate:unhasted'] * w._tickDelta / (w._second * a.cooldown))
-      })
+      start('loop4-1')
+      let cd = a.recharges
+      let currentCD = e[cd]
+      let cap = e[cd + ':cap']
+      e[cd] = Math.min(cap, currentCD + unhastedRate / a.cooldown)
+      end('loop4-1')
+
+      start('loop4-2')
       a.hastedRecharges.forEach(cd => {
         let cap = 1
         if (e[cd + ':cap'] !== undefined) {
           cap = e[cd + ':cap']
         }
         if (e[cd] !== cap) {
-          e[cd] = Math.min(cap, e[cd] + e['spell:recharge-rate:hasted'] * w._tickDelta / (w._second * a.cooldown))
+          e[cd] = Math.min(cap, e[cd] + hastedRate / a.cooldown)
         }
       })
+      end('loop4-2')
     }
   })
+  end('loop4')
   report('WORLD_TICKED', { time: w.now / w._second })
 }
 export { TickWorld }
@@ -100,9 +132,11 @@ const LoadDefaultAttributes = function(e: IEntity) {
         delete e[k]
         Object.defineProperty(e, k, {
           get: function() {
+            //start(`attr[${k}]`)
             if (e[`__${k}__`] === undefined) {
               e[`__${k}__`] = r.value(e)
             }
+            //end(`attr[${k}]`)
             return e[`__${k}__`]
           },
           set: function(v) {
@@ -198,17 +232,17 @@ const DealDamage = (e: IEntity, t: IEntity, args: any): void => {
       let s: IEntity = args.source
       if (args.mhDamageNorm) {
         let x = s['mainHand:damage:normalized'] * args.mhDamageNorm * s['damage']
-        debugVerbose(`adding ${x} damage from mainHand`)
+        verbose(`adding ${x} damage from mainHand`)
         a += x
       }
       if (args.ohDamageNorm) {
         let x = s['offHand:damage:normalized'] * args.ohDamageNorm * s['damage']
-        debugVerbose(`adding ${x} damage from offHand`)
+        verbose(`adding ${x} damage from offHand`)
         a += x
       }
       if (args.attackPower) {
         let x = s['attackpower'] * args.attackPower
-        debugVerbose(`adding ${x} damage from arrackpower`)
+        verbose(`adding ${x} damage from arrackpower`)
         a += x
       } /*
       if (args.mhDamageRaw) {
@@ -231,18 +265,18 @@ const DealDamage = (e: IEntity, t: IEntity, args: any): void => {
     if (Math.random() <= args.source['crit']) {
       args.amount *= 2
       args.didCrit = true
-      debugVerbose('spell did crit')
+      verbose('spell did crit')
     }
   }
   let dr: number = t['*dr:all']
-  debugVerbose(`baseline dr: ${t['*dr:all']}`)
+  verbose(`baseline dr: ${t['*dr:all']}`)
   if (args.type == 'PHYSICAL') {
-    debugVerbose(`physical dr: ${t['*dr:physical']}`)
+    verbose(`physical dr: ${t['*dr:physical']}`)
     dr *= t['*dr:physical']
-    debugVerbose(`armor dr: ${t['armor']}`)
+    verbose(`armor dr: ${t['armor']}`)
     dr *= t['armor']
   } else {
-    debugVerbose(`magic dr: ${t['*dr:magical']}`)
+    verbose(`magic dr: ${t['*dr:magical']}`)
     dr *= t['*dr:magical']
   }
   args.amount *= dr
@@ -251,11 +285,11 @@ const DealDamage = (e: IEntity, t: IEntity, args: any): void => {
 
   if (t.health > args.amount) {
     t.health -= args.amount
-    debug(`damage done:\t${args.source.slug}\t${args.target.slug}\t${args.amount}\t${args.ability.slug}`)
+    //debug(`damage done:\t${args.source.slug}\t${args.target.slug}\t${args.amount}\t${args.ability.slug}`)
     report('DAMAGE_TAKEN', args)
   } else {
     t.health = 0
-    debug(`unit died from:${args.source.slug}\t${args.target.slug}\t${args.amount}\t${args.ability.slug}`)
+    //debug(`unit died from:${args.source.slug}\t${args.target.slug}\t${args.amount}\t${args.ability.slug}`)
     report('DAMAGE_TAKEN', args)
     Kill(args.source, args.ability)
   }
@@ -300,6 +334,25 @@ const UnteachAbility = (w: IWorld, e: IEntity, a: IAbility): void => {
   }
 }
 export { UnteachAbility }
+
+const TeachPassive = (w: IWorld, e: IEntity, p: IPassiveTemplate) => {
+  for (let a in p.attributes) {
+    GainAttribute(e, a, p.attributes[a])
+  }
+  e.passives.push(p)
+}
+export { TeachPassive }
+const UnteachPassive = (w: IWorld, e: IEntity, p: IPassiveTemplate) => {
+  let i = e.passives.indexOf(p)
+  if (i < 0) {
+    return
+  }
+  for (let a in p.attributes) {
+    LoseAttribute(e, a, p.attributes[a])
+  }
+  e.passives.splice(i, 1)
+}
+export { UnteachPassive }
 const ApplyModifier = (w: IWorld, e: IEntity, m: IModifier): void => {
   e.modifiers.push(m)
   m.apply(w, e)
@@ -312,6 +365,106 @@ const UnapplyModifier = (e: IEntity, m: IModifier): void => {
   report('MODIFIER_DROPPED', { entity: e, modifier: m })
 }
 export { UnapplyModifier }
+
+const ApplyMod = (w: IWorld, src: IEntity, tar: IEntity, m: IModifierTemplate): void => {
+  let x: IModifierInstance = {
+    template: m,
+    source: src,
+    applied: w.now,
+    expires: w.now + m.duration * (m.durationIsHasted ? 1 / (1 + src['haste']) : 1) * w._second
+  }
+  switch (m.stackMode) {
+    case 'OVERWRITE':
+      {
+        let matching = tar.mods.filter(y => y.template.id == x.template.id && y.source == x.source)
+        matching.forEach(z => {
+          for (let a in z.template.attributes) {
+            LoseAttribute(tar, a, z.template.attributes[a])
+          }
+        })
+        if (matching.length > 0) {
+          tar.mods = tar.mods.filter(y => !(y.template.id == x.template.id && y.source == x.source))
+        }
+        tar.mods.push(x)
+      }
+      break
+    case 'EXTEND':
+      {
+        let extendable = tar.mods.filter(y => y.template.id == x.template.id && y.source == x.source)
+        if (extendable.length > 0) {
+          verbose(`extending the old mod for ${m.slug}`)
+          extendable[0].expires += m.duration * (m.durationIsHasted ? 1 / (1 + src['haste']) : 1) * w._second
+        } else {
+          verbose(`Applying a new mod ${m.slug} at ${w.now}`)
+          tar.mods.push(x)
+        }
+      }
+      break
+    case 'DISJOINT':
+      x.expires += m.duration * (m.durationIsHasted ? 1 / (1 + src['haste']) : 1) * w._second
+      tar.mods.push(x)
+      for (let a in m.attributes) {
+        GainAttribute(tar, a, m.attributes[a])
+      }
+      verbose(`${m.slug} was just attached`)
+      break
+    default:
+      debug(`Unrecognized mod stackMode: '${m.stackMode}'`)
+  }
+  tar.mods.sort((x, y) => x.expires - y.expires)
+}
+export { ApplyMod }
+const ApplyTicker = (w: IWorld, src: IEntity, tar: IEntity, t: ITickerTemplate): void => {
+  let x: ITickerInstance = {
+    template: t,
+    source: src,
+    applied: w.now,
+    expires: w.now + t.duration * (t.durationIsHasted ? 1 / (1 + src['haste']) : 1) * w._second,
+    nextTick: w.now + t.interval * (t.intervalIsHasted ? 1 / (1 + src['haste']) : 1) * w._second
+  }
+  switch (t.stackMode) {
+    case 'OVERWRITE':
+      {
+        let matching = tar.tickers.filter(y => y.template.id == t.id && y.source == src)
+        matching.forEach(z => {
+          for (let a in z.template.attributes) {
+            LoseAttribute(tar, a, z.template.attributes[a])
+          }
+        })
+        if (matching.length > 0) {
+          tar.mods = tar.mods.filter(y => !(y.template.id == t.id && y.source == src))
+        }
+        tar.mods.push(x)
+      }
+      break
+    case 'EXTEND':
+      {
+        let extendable = tar.tickers.filter(y => y.template.id == t.id && y.source == src)
+        if (extendable.length > 0) {
+          verbose(`extending the old mod for ${t.slug}`)
+          extendable[0].expires += t.duration * (t.durationIsHasted ? 1 / (1 + src['haste']) : 1) * w._second
+        } else {
+          verbose(`Applying a new mod ${t.slug} at ${w.now}`)
+          tar.tickers.push(x)
+        }
+      }
+      break
+    case 'DISJOINT':
+      x.expires += t.duration * (t.durationIsHasted ? 1 / (1 + src['haste']) : 1) * w._second
+      tar.tickers.push(x)
+      for (let a in t.attributes) {
+        GainAttribute(tar, a, t.attributes[a])
+      }
+      verbose(`${t.slug} was just attached`)
+      break
+    default:
+      debug(`Unrecognized mod stackMode: '${t.stackMode}'`)
+  }
+  tar.tickers.sort((x, y) => x.nextTick - y.nextTick)
+}
+
+export { ApplyTicker }
+
 const TriggerGCD = (e: IEntity): void => {
   e['gcd:remaining'] = e['gcd:time']
 }

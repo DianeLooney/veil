@@ -13,6 +13,51 @@ interface IDropFunc {
 interface ITickFunc {
   (w: IWorld, s: IEntity, e: IEntity): void
 }
+interface IPassiveTemplate {
+  id: number
+  slug: string
+  attributes: { [key: string]: number }
+}
+export { IPassiveTemplate }
+interface IModifierTemplate {
+  id: number
+  slug: string
+  stackMode: string
+  duration: number
+  durationIsHasted: boolean
+  attributes: { [key: string]: number }
+}
+export { IModifierTemplate }
+interface IModifierInstance {
+  template: IModifierTemplate
+  source: IEntity
+  applied: number
+  expires: number
+}
+export { IModifierInstance }
+interface ITickerTemplate {
+  id: number
+  slug: string
+  stackMode: string
+  duration: number
+  durationIsHasted: boolean
+  attributes: { [key: string]: number }
+  onApply: IApplyFunc[]
+  onDrop: IDropFunc[]
+  onInterval: ITickFunc[]
+  interval: number
+  intervalIsHasted: boolean
+}
+export { ITickerTemplate }
+interface ITickerInstance {
+  template: ITickerTemplate
+  source: IEntity
+  applied: number
+  expires: number
+  nextTick: number
+}
+export { ITickerInstance }
+
 interface IModifier {
   id: number
   slug: string
