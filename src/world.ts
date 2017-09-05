@@ -16,12 +16,14 @@ interface IWorld {
   slug: string
 }
 export { IWorld }
-const DefaultWorld: IWorld = {
-  _second: 1000,
-  _tickDelta: 40,
+const DefaultWorld = function(): IWorld {
+  return {
+    _second: 1000,
+    _tickDelta: 40,
 
-  now: 0,
-  entities: [],
-  slug: 'default-world'
+    now: 0,
+    entities: [],
+    slug: 'default-world'
+  }
 }
 export { DefaultWorld }

@@ -76,6 +76,8 @@ const DefaultModifier: IModifier = {
         case 'EXTEND':
           matching[0]._expires += this.duration
           return
+        case 'DISJOINT':
+          e.modifiers.push(this)
         default:
           debug(`Unrecognized stack mode '${this.stackMode}' on '${this.slug}`)
       }

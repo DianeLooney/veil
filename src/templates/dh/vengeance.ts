@@ -159,20 +159,24 @@ const spiritBomb = Object.assign(Object.create(DefaultAbility), {
     ['fragment:count']: 1
   },
   onCast: [
-    (w: IWorld, e: IEntity, t: IEntity) => {
+    (w: IWorld, e: IEntity) => {
       let x = e['fragment:count']
       consumeFragment(w, e, x)
+      debug('casting spirit bomb')
       e.delays.push({
         when: w.now + 0.125 * w._second,
         func: (w: IWorld, e: IEntity): void => {
           //TODO: target units in range of the caster intsead of his target
-          _.DealDamage(e, t, {
-            source: e,
-            target: t,
-            type: 'FIRE',
-            attackPower: 1.8 * x * e['damage'],
-            ability: spiritBomb
+          _.EnemiesTouchingRadius(w, e.position, 8).forEach(tar => {
+            _.DealDamage(e, tar, {
+              source: e,
+              target: tar,
+              type: 'FIRE',
+              attackPower: 1.8 * x * e['damage'],
+              ability: spiritBomb
+            })
           })
+
           //TODO: Apply healing modifier
         }
       })
@@ -251,7 +255,7 @@ const demonSpikesSpell = Object.assign(Object.create(DefaultAbility), {
   hastedRecharges: ['ability:demon-spikes:charges'],
   cost: {
     'ability:demon-spikes:charges': 1,
-    'pain:current': 20
+    'pain:current': 200
   },
   attributes: {
     'ability:demon-spikes:charges': 2,
@@ -262,13 +266,114 @@ const demonSpikesSpell = Object.assign(Object.create(DefaultAbility), {
   onCast: [
     (w: IWorld, e: IEntity, t: IEntity) => {
       debug(`Current charges of demon-pikes: ${e['ability:demon-spikes:charges']}`)
-      demonSpikesBuff.apply(w, e)
+      _.ApplyModifier(
+        w,
+        e,
+        Object.assign(Object.create(demonSpikesBuff), {
+          attributes: {
+            ['+parry']: 0.2,
+            ['*dr:physical']: 1 - Math.min(0.99, 0.12 + e['mastery:demon-spikes'])
+          }
+        })
+      )
+
       if (e['trait:defensive-spikes:rank'] !== undefined && e['trait:defensive-spikes:rank'] >= 1) {
         defensiveSpikesBuff.apply(w, e)
       }
     }
   ]
 })
+
+const immolationAuraModifier = Object.assign(Object.create(DefaultModifier), {
+  slug: 'immolation-aura',
+  stackMode: 'DISJOINT',
+  onInterval: [
+    (w: IWorld, s: IEntity, e: IEntity) => {
+      e['pain:current'] = Math.min(e['pain:max'], e['pain:current'] + 20)
+      _.EnemiesTouchingRadius(w, e.position, 8).forEach(x => {
+        _.DealDamage(s, x, {
+          source: s,
+          target: x,
+          type: 'FIRE',
+          attackPower: 0.69 * 0.95 * s['damage'] / 6,
+          ability: immolationAura
+        })
+      })
+    }
+  ],
+  interval: 1,
+  duration: 6
+}) as IModifier
+const immolationAura = Object.assign(Object.create(DefaultAbility), {
+  slug: 'immolation-aura',
+  cooldown: 15,
+  hastedRecharges: ['ability:immolation-aura:cooldown'],
+  cost: { 'ability:immolation-aura:cooldown': 1 },
+  attributes: { 'ability:immolation-aura:cooldown': 1 },
+  onCast: [
+    (w: IWorld, e: IEntity) => {
+      e['pain:current'] = Math.min(e['pain:max'], e['pain:current'] + 80)
+      _.EnemiesTouchingRadius(w, e.position, 8).forEach(x => {
+        _.DealDamage(e, x, {
+          source: e,
+          target: x,
+          type: 'FIRE',
+          attackPower: 2.43 * 0.95 * e['damage'] / 6,
+          ability: immolationAura
+        })
+      })
+      _.ApplyModifier(w, e, Object.assign(Object.create(immolationAuraModifier), { source: e }) as IModifier)
+    }
+  ]
+}) as IAbility
+
+const soulCarverDebuff = Object.assign(Object.create(DefaultModifier), {
+  slug: 'immolation-aura',
+  onInterval: [
+    (w: IWorld, s: IEntity, e: IEntity) => {
+      _.EnemiesTouchingRadius(w, e.position, 8).forEach(x => {
+        spawnFragment(w, e, false)
+        _.DealDamage(s, e, {
+          source: s,
+          target: e,
+          type: 'FIRE',
+          attackpower: 1.55 * 0.95 * e['damage'], //TODO: Add fire damage modifier in here
+          ability: soulCarver
+        })
+      })
+    }
+  ],
+  interval: 1,
+  duration: 3
+})
+const soulCarver = Object.assign(Object.create(DefaultAbility), {
+  slug: 'soul-carver',
+  cooldown: 45,
+  recharges: ['ability:soul-carver:cooldown'],
+  cost: { 'ability:soul-carver:cooldown': 1 },
+  attributes: { 'ability:soul-carver:cooldown': 1 },
+  onCast: [
+    (w: IWorld, e: IEntity, t: IEntity) => {
+      spawnFragment(w, e, false)
+      spawnFragment(w, e, false)
+      _.DealDamage(e, t, {
+        source: e,
+        target: t,
+        type: 'FIRE',
+        'mainHand:damage:normalized': 5.07 * 0.95 * e['damage'], //TODO: Add fire damage modifier in here
+        ability: soulCarver
+      })
+      _.DealDamage(e, t, {
+        source: e,
+        target: t,
+        type: 'FIRE',
+        'offHand:damage:normalized': 5.07 * 0.95 * e['damage'], //TODO: Add fire damage modifier in here
+        ability: soulCarver
+      })
+    }
+  ]
+})
+
 const empowerWardsBuff = Object.assign(Object.create(DefaultModifier), {
   slug: 'empower-wards-modifier',
   duration: 6,
@@ -436,86 +541,94 @@ const enchants = Object.assign(Object.create(DefaultPassive), {
     '+crit:rating': 400
   }
 })
-const vengeance = Object.assign(Object.create(DefaultEntity), {
-  onInit: [
-    function(w: IWorld, e: IEntity) {
-      _.TeachAbility
-      _.TeachAbility(w, e, arcaneAcuity) //TODO: Only load of belfs
+const DefaultVengeance = function() {
+  let x = Object.assign(DefaultEntity(), {
+    onInit: [
+      function(w: IWorld, e: IEntity) {
+        _.TeachAbility(w, e, arcaneAcuity) //TODO: Only load of belfs
 
-      _.TeachAbility(w, e, shear)
-      _.TeachAbility(w, e, fracture)
-      _.TeachAbility(w, e, spiritBomb)
-      _.TeachAbility(w, e, demonSpikesSpell)
-      _.TeachAbility(w, e, sigilOfFlame)
-      _.TeachAbility(w, e, empowerWards)
+        _.TeachAbility(w, e, shear)
+        _.TeachAbility(w, e, fracture)
+        _.TeachAbility(w, e, spiritBomb)
+        _.TeachAbility(w, e, demonSpikesSpell)
+        _.TeachAbility(w, e, sigilOfFlame)
+        _.TeachAbility(w, e, empowerWards)
+        _.TeachAbility(w, e, immolationAura)
+        _.TeachAbility(w, e, soulCarver)
 
-      _.TeachAbility(w, e, fractureMainHand)
-      _.TeachAbility(w, e, fractureOffHand)
-      _.TeachAbility(w, e, increasedThreat)
-      _.TeachAbility(w, e, demonicWards)
-      _.TeachAbility(w, e, leatherSpecialization)
-      _.TeachAbility(w, e, criticalStrikes)
-      _.TeachAbility(w, e, enchants)
-    }
-  ],
-  onEquipItem: [
-    (w: IWorld, e: IEntity, i: IItem, s: string) => {
-      if (i.artifactId === 60) {
-        let totalRanks = -3
-        i.artifactTraits.forEach(t => {
-          totalRanks += t.rank
-          let spellId = artifactMappings[t.id][t.rank - 1]
-          if (artifactTraitsById[spellId] !== undefined) {
-            _.TeachAbility(w, e, artifactTraitsById[spellId](t.rank))
-          } else {
-            console.warn(`unrecognized artifact trait: ${spellId} (rank ${t.rank})`)
-          }
-        })
-        _.TeachAbility(w, e, artifactTraitsById[211309](totalRanks))
-        _.TeachAbility(w, e, artifactTraitsById[226829](totalRanks))
+        _.TeachAbility(w, e, fractureMainHand)
+        _.TeachAbility(w, e, fractureOffHand)
+        _.TeachAbility(w, e, increasedThreat)
+        _.TeachAbility(w, e, demonicWards)
+        _.TeachAbility(w, e, leatherSpecialization)
+        _.TeachAbility(w, e, criticalStrikes)
+        _.TeachAbility(w, e, enchants)
       }
-    }
-  ],
-  onUnequipItem: [
-    (w: IWorld, e: IEntity, i: IItem, s: string) => {
-      if (i.artifactId === 60) {
-        let totalRanks = -3
-        i.artifactTraits.forEach(t => {
-          totalRanks += t.rank
-          let spellId = artifactMappings[t.id][t.rank - 1]
-          if (artifactTraitsById[spellId] !== undefined) {
-            _.UnteachAbility(w, e, artifactTraitsById[spellId](t.rank))
-          } else {
-            console.warn(`unrecognized artifact trait: ${spellId} (rank ${t.rank})`)
-          }
-        })
-        _.UnteachAbility(w, e, artifactTraitsById[211309](totalRanks))
-        _.UnteachAbility(w, e, artifactTraitsById[226829](totalRanks))
+    ],
+    onEquipItem: [
+      (w: IWorld, e: IEntity, i: IItem, s: string) => {
+        if (i.artifactId === 60) {
+          let totalRanks = -3
+          i.artifactTraits.forEach(t => {
+            totalRanks += t.rank
+            let spellId = artifactMappings[t.id][t.rank - 1]
+            if (artifactTraitsById[spellId] !== undefined) {
+              _.TeachAbility(w, e, artifactTraitsById[spellId](t.rank))
+            } else {
+              console.warn(`unrecognized artifact trait: ${spellId} (rank ${t.rank})`)
+            }
+          })
+          _.TeachAbility(w, e, artifactTraitsById[211309](totalRanks))
+          _.TeachAbility(w, e, artifactTraitsById[226829](totalRanks))
+        }
       }
+    ],
+    onUnequipItem: [
+      (w: IWorld, e: IEntity, i: IItem, s: string) => {
+        if (i.artifactId === 60) {
+          let totalRanks = -3
+          i.artifactTraits.forEach(t => {
+            totalRanks += t.rank
+            let spellId = artifactMappings[t.id][t.rank - 1]
+            if (artifactTraitsById[spellId] !== undefined) {
+              _.UnteachAbility(w, e, artifactTraitsById[spellId](t.rank))
+            } else {
+              console.warn(`unrecognized artifact trait: ${spellId} (rank ${t.rank})`)
+            }
+          })
+          _.UnteachAbility(w, e, artifactTraitsById[211309](totalRanks))
+          _.UnteachAbility(w, e, artifactTraitsById[226829](totalRanks))
+        }
+      }
+    ],
+    onSpawn: [(w: IWorld, e: IEntity) => {}]
+  })
+  x._attributes = Object.assign(x._attributes, {
+    ['pain:max:base']: 1000,
+    ['+pain:max']: 0,
+    ['pain:current']: 0,
+    ['pain:max']: function(e) {
+      return e['pain:max:base'] + e['+pain:max']
+    },
+    ['fragment:expiration:time']: [],
+    ['fragment:count']: 0,
+    ['*vengeance:damage']: 0.95,
+    ['+shear:damage']: 0.12,
+    ['*damage']: 1,
+    ['damage']: function(e) {
+      return e['*damage'] * (1 + e['vers:damage-done'])
+    },
+    ['artifact:defensive-spikes:amount']: 0.1,
+    ['artifact:defensive-spikes:duration']: 0.1,
+    ['mastery:rating:conversion:demon-spikes']: 0.75,
+    ['mastery:demon-spikes']: function(e) {
+      return e['mastery:standard'] * e['mastery:rating:conversion:demon-spikes']
     }
-  ],
-  onSpawn: [(w: IWorld, e: IEntity) => {}]
-})
+  })
+  return x as IEntity
+}
 
-vengeance._attributes = Object.assign(DefaultEntity._attributes, {
-  ['pain:max:base']: 1000,
-  ['+pain:max']: 0,
-  ['pain:current']: 0,
-  ['pain:max']: function(e) {
-    return e['pain:max:base'] + e['+pain:max']
-  },
-  ['fragment:expiration:time']: [],
-  ['fragment:count']: 0,
-  ['*vengeance:damage']: 0.95,
-  ['+shear:damage']: 0.12,
-  ['*damage']: 1,
-  ['damage']: function(e) {
-    return e['*damage'] * (1 + e['vers:damage-done'])
-  },
-  ['artifact:defensive-spikes:amount']: 0.1,
-  ['artifact:defensive-spikes:duration']: 0.1
-})
-export default vengeance
+export default DefaultVengeance
 
 /* 
 //passives

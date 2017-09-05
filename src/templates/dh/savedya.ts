@@ -1,11 +1,11 @@
-import vengeance from './vengeance'
+import DefaultVengeance from './vengeance'
 import { IEntity } from '../../entity'
 import data from './savedyadh_60'
 import * as _ from '../../actions'
 import { calcItems } from '../fromArmory'
 import { IWorld } from '../../world'
 
-const savedya = Object.assign(Object.create(vengeance), {
+const savedya = Object.assign(DefaultVengeance(), {
   slug: 'savedya'
 }) as IEntity
 savedya.onInit.push((w: IWorld, e: IEntity) => {
