@@ -33,14 +33,14 @@ const DespawnEntity = (w: IWorld, e: IEntity): void => {
 export { DespawnEntity }
 const TickWorld = (w: IWorld): void => {
   w.now += w._tickDelta
-  start('loop1')
+  ////start('loop1')
   w.entities.forEach(e => {
     if (e['gcd:remaining'] !== undefined && e['gcd:remaining'] > 0) {
       e['gcd:remaining'] -= w._tickDelta
     }
   })
-  end('loop1')
-  start('loop2')
+  ////end('loop1')
+  ////start('loop2')
   w.entities.forEach(e => {
     e.modifiers.forEach(m => {
       if (m._nextInterval <= w.now) {
@@ -74,11 +74,11 @@ const TickWorld = (w: IWorld): void => {
       for (let a in x.template.attributes) {
         LoseAttribute(e, a, x.template.attributes[a])
       }
-      verbose(`Expired mod ${x.template.slug} at ${w.now / 1000}`)
+      //verbose`Expired mod ${x.template.slug} at ${w.now / 1000}`)
     }
   })
-  end('loop2')
-  start('loop3')
+  ////end('loop2')
+  ////start('loop3')
   w.entities.forEach(e => {
     e.delays = e.delays.filter(d => {
       if (d.when <= w.now) {
@@ -88,15 +88,16 @@ const TickWorld = (w: IWorld): void => {
       return true
     })
   })
-  end('loop3')
-  start('loop4')
+  ////end('loop3')
+  ////start('loop4')
   w.entities.forEach(e => {
     let changes = false
     while (e.rechargingAbilities.length > 0 && e.rechargingAbilities[0].willFinishCharging <= w.now) {
       let a = e.rechargingAbilities[0]
-      verbose(`handling charges for ${a.template.slug}: ${a.willFinishCharging}`)
+      //verbose`handling charges for ${a.template.slug}: ${a.willFinishCharging}`)
 
-      a.currentCharges = Math.min(a.template.chargeMax, a.currentCharges + 1)
+      a.currentCharges = a.currentCharges + 1
+      a.currentCharges = Math.min(a.template.chargeMax, a.currentCharges)
       if (a.currentCharges < a.template.chargeMax) {
         a.startedCharging = a.willFinishCharging
         a.willFinishCharging =
@@ -110,7 +111,7 @@ const TickWorld = (w: IWorld): void => {
       e.rechargingAbilities.sort((x, y) => x.willFinishCharging - y.willFinishCharging)
     }
   })
-  end('loop4')
+  ////end('loop4')
   report('WORLD_TICKED', { time: w.now / w._second })
 }
 export { TickWorld }
@@ -124,11 +125,11 @@ const LoadDefaultAttributes = function(e: IEntity) {
         delete e[k]
         Object.defineProperty(e, k, {
           get: function() {
-            //start(`attr[${k}]`)
+            ////start(`attr[${k}]`)
             if (e[`__${k}__`] === undefined) {
               e[`__${k}__`] = r.value(e)
             }
-            //end(`attr[${k}]`)
+            ////end(`attr[${k}]`)
             return e[`__${k}__`]
           },
           set: function(v) {
@@ -214,43 +215,64 @@ const CastAbilityByName = (w: IWorld, e: IEntity, slug: string, ...targets: IEnt
 export { CastAbilityByName }
 const CastAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...targets: IEntity[]): boolean => {
   let a = i.template
+  ////start('onGCD')
   if (a.onGCD && IsOnGCD(e)) {
+    ////end('onGCD')
     return false
   }
+  ////end('onGCD')
+  ////start('cooldown')
   if (a.cooldown > 0 && i.currentCharges < 1) {
+    //end('cooldown')
     return false
   }
+  //end('cooldown')
+  //start('requires')
   for (let i in a.requires) {
     if (e[i] < a.requires[i]) {
+      //end('requires')
       return false
     }
   }
+  //end('requires')
+  //start('costs')
   for (let i in a.cost) {
     if (e[i] < a.cost[i]) {
       return false
     }
   }
-  i.currentCharges--
+  //end('costs')
+  i.currentCharges = i.currentCharges - 1
+  //start('a.cooldown')
   if (a.cooldown > 0) {
     i.startedCharging = w.now
     i.willFinishCharging = w.now + a.cooldown * (a.cooldownIsHasted ? 1 / (1 + e['haste']) : 1) * w._second
-    e.rechargingAbilities.push(i)
+    if (!e.rechargingAbilities.includes(i)) {
+      e.rechargingAbilities.push(i)
+    }
+
     e.rechargingAbilities.sort((x, y) => x.willFinishCharging - y.willFinishCharging)
   }
+  //end('a.cooldown')
+  //start('costremove')
   for (let i in a.cost) {
     e[i] -= a.cost[i]
   }
-
+  //end('costremove')
+  //start('targets.length')
   if (targets.length > 0) {
-    debug(`${e.slug} casting ${a.slug} on targets: ${targets.toString()}`)
+    //debug(`${e.slug} casting ${a.slug} on targets: ${targets.toString()}`)
     targets.forEach(t => a.onCast.forEach(h => h(w, e, t)))
   } else {
-    debug(`${e.slug} casting ${a.slug}`)
+    //debug(`${e.slug} casting ${a.slug}`)
     a.onCast.forEach(h => h(w, e))
   }
+  //end('targets.length')
+  //start('triggerGCD')
   if (a.triggersGCD) {
     TriggerGCD(e)
   }
+  //end('triggerGCD')
   return true
 }
 export { CastAbilityByReference }
@@ -266,25 +288,20 @@ const CastFreeAbilityByTemplate = (w: IWorld, e: IEntity, tmpl: IAbilityTemplate
 }
 export { CastFreeAbilityByTemplate }
 const DealDamage = (e: IEntity, t: IEntity, args: any): void => {
+  //start('deal-damage:first-half')
   let a: number = 0
   switch (args.type) {
     case 'PHYSICAL':
     case 'FIRE':
       let s: IEntity = args.source
-      if (args.mhDamageNorm) {
-        let x = s['mainHand:damage:normalized'] * args.mhDamageNorm * s['damage']
-        verbose(`adding ${x} damage from mainHand`)
-        a += x
+      if (args.mhDamageNorm !== undefined) {
+        a += s['mainHand:damage:normalized'] * args.mhDamageNorm * s['damage']
       }
-      if (args.ohDamageNorm) {
-        let x = s['offHand:damage:normalized'] * args.ohDamageNorm * s['damage']
-        verbose(`adding ${x} damage from offHand`)
-        a += x
+      if (args.ohDamageNorm !== undefined) {
+        a += s['offHand:damage:normalized'] * args.ohDamageNorm * s['damage']
       }
-      if (args.attackPower) {
-        let x = s['attackpower'] * args.attackPower
-        verbose(`adding ${x} damage from arrackpower`)
-        a += x
+      if (args.attackPower !== undefined) {
+        a += s['attackpower'] * args.attackPower
       } /*
       if (args.mhDamageRaw) {
         a += args.mhDamageRaw * (s['+mainHand:damage:min'] + Math.random() * (s['+mainHand:damage:max'] - s['+mainHand:damage:min']))
@@ -301,36 +318,36 @@ const DealDamage = (e: IEntity, t: IEntity, args: any): void => {
       })
       return
   }
+  //end('deal-damage:first-half')
+  //start('deal-damage:second-half')
   args.amount = a
   if (!args.critDisabled) {
     if (Math.random() <= args.source['crit']) {
       args.amount *= 2
       args.didCrit = true
-      verbose('spell did crit')
+      //verbose'spell did crit')
     }
   }
+  //end('deal-damage:second-half')
+  //start('deal-damage:third-half')
   let dr: number = t['*dr:all']
-  verbose(`baseline dr: ${t['*dr:all']}`)
   if (args.type == 'PHYSICAL') {
-    verbose(`physical dr: ${t['*dr:physical']}`)
     dr *= t['*dr:physical']
-    verbose(`armor dr: ${t['armor']}`)
     dr *= t['armor']
   } else {
-    verbose(`magic dr: ${t['*dr:magical']}`)
     dr *= t['*dr:magical']
   }
   args.amount *= dr
-
+  //end('deal-damage:third-half')
   args.amount = Math.round(args.amount)
 
   if (t.health > args.amount) {
     t.health -= args.amount
-    //debug(`damage done:\t${args.source.slug}\t${args.target.slug}\t${args.amount}\t${args.ability.slug}`)
+    ////debug(`damage done:\t${args.source.slug}\t${args.target.slug}\t${args.amount}\t${args.ability.slug}`)
     report('DAMAGE_TAKEN', args)
   } else {
     t.health = 0
-    //debug(`unit died from:${args.source.slug}\t${args.target.slug}\t${args.amount}\t${args.ability.slug}`)
+    ////debug(`unit died from:${args.source.slug}\t${args.target.slug}\t${args.amount}\t${args.ability.slug}`)
     report('DAMAGE_TAKEN', args)
     Kill(args.source, args.ability)
   }
@@ -439,10 +456,10 @@ const ApplyMod = (w: IWorld, src: IEntity, tar: IEntity, m: IModifierTemplate): 
       {
         let extendable = tar.mods.filter(y => y.template.id == x.template.id && y.source == x.source)
         if (extendable.length > 0) {
-          verbose(`extending the old mod for ${m.slug}`)
+          //verbose`extending the old mod for ${m.slug}`)
           extendable[0].expires += m.duration * (m.durationIsHasted ? 1 / (1 + src['haste']) : 1) * w._second
         } else {
-          verbose(`Applying a new mod ${m.slug} at ${w.now}`)
+          //verbose`Applying a new mod ${m.slug} at ${w.now}`)
           tar.mods.push(x)
         }
       }
@@ -453,10 +470,10 @@ const ApplyMod = (w: IWorld, src: IEntity, tar: IEntity, m: IModifierTemplate): 
       for (let a in m.attributes) {
         GainAttribute(tar, a, m.attributes[a])
       }
-      verbose(`${m.slug} was just attached`)
+      //verbose`${m.slug} was just attached`)
       break
     default:
-      debug(`Unrecognized mod stackMode: '${m.stackMode}'`)
+    //debug(`Unrecognized mod stackMode: '${m.stackMode}'`)
   }
   tar.mods.sort((x, y) => x.expires - y.expires)
 }
@@ -488,10 +505,10 @@ const ApplyTicker = (w: IWorld, src: IEntity, tar: IEntity, t: ITickerTemplate):
       {
         let extendable = tar.tickers.filter(y => y.template.id == t.id && y.source == src)
         if (extendable.length > 0) {
-          verbose(`extending the old mod for ${t.slug}`)
+          //verbose`extending the old mod for ${t.slug}`)
           extendable[0].expires += t.duration * (t.durationIsHasted ? 1 / (1 + src['haste']) : 1) * w._second
         } else {
-          verbose(`Applying a new mod ${t.slug} at ${w.now}`)
+          //verbose`Applying a new mod ${t.slug} at ${w.now}`)
           tar.tickers.push(x)
         }
       }
@@ -502,10 +519,10 @@ const ApplyTicker = (w: IWorld, src: IEntity, tar: IEntity, t: ITickerTemplate):
       for (let a in t.attributes) {
         GainAttribute(tar, a, t.attributes[a])
       }
-      verbose(`${t.slug} was just attached`)
+      //verbose`${t.slug} was just attached`)
       break
     default:
-      debug(`Unrecognized mod stackMode: '${t.stackMode}'`)
+    //debug(`Unrecognized mod stackMode: '${t.stackMode}'`)
   }
   tar.tickers.sort((x, y) => x.nextTick - y.nextTick)
 }

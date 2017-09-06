@@ -5,13 +5,17 @@ import * as _ from '../../actions'
 import { calcItems } from '../fromArmory'
 import { IWorld } from '../../world'
 
-const savedya = Object.assign(DefaultVengeance(), {
-  slug: 'savedya'
-}) as IEntity
-savedya.onInit.push((w: IWorld, e: IEntity) => {
-  let items = calcItems(data)
-  items.forEach(item => {
-    _.EquipItem(w, e, item.slot, item)
+function newSavedya() {
+  const savedya = Object.assign(DefaultVengeance(), {
+    slug: 'savedya'
+  }) as IEntity
+  savedya.onInit.push((w: IWorld, e: IEntity) => {
+    let items = calcItems(data)
+    items.forEach(item => {
+      _.EquipItem(w, e, item.slot, item)
+    })
   })
-})
-export default savedya
+  return savedya
+}
+
+export default newSavedya

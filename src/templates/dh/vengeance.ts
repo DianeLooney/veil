@@ -7,6 +7,7 @@ import { DefaultModifier, IModifier, IModifierTemplate, ITickerTemplate } from '
 import { sequence, rppm } from '../../rng'
 import report from '../../report'
 import * as _debug from 'debug'
+import { start, end } from '../../perf'
 const debug = _debug('vengeance')
 const verbose = _debug('verbose:vengeance')
 
@@ -79,20 +80,28 @@ const shear = Object.assign({}, AbilityDefaults, {
       //340% Weapon Damage
       //+100 Pain
       //Shatter
+      //start('shear:mult-calc')
+      let z = 3.4 * e['*vengeance:damage'] * e['damage'] * (1 + e['+shear:damage'])
+      //end('shear:mult-calc')
 
+      //start('shear:deal-damage')
       _.DealDamage(e, t, {
         source: e,
         target: t,
         type: 'PHYSICAL',
-        mhDamageNorm: 3.4 * e['*vengeance:damage'] * e['damage'] * (1 + e['+shear:damage']),
+        mhDamageNorm: z,
         ability: shear
       })
-
+      //end('shear:deal-damage')
+      //start('shear:pain')
       e['pain:current'] += 100
-
+      //end('shear:pain')
+      //start('shear:shatter')
       if (!e.rng['shear:shatter']) {
         e.rng['shear:shatter'] = sequence([0.04, 0.12, 0.25, 0.4, 0.6, 0.8, 0.9, 1.0])
       }
+      //end('shear:shatter')
+      //start('shear-artifact')
       if (e['trait:shatter-the-souls:rank'] !== undefined && e.health < 0.5 * e['maxHealth']) {
         if (e.rng['shear:shatter'].next(1 + e['trait:shatter-the-souls:rank'] * 0.05)) {
           spawnFragment(w, e, false)
@@ -102,6 +111,7 @@ const shear = Object.assign({}, AbilityDefaults, {
           spawnFragment(w, e, false)
         }
       }
+      //end('shear-artifact')
     }
   ]
 })
@@ -260,7 +270,6 @@ const demonSpikesSpell: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   slug: 'demon-spikes',
   cooldown: 12,
   chargeMax: 2,
-  hastedRecharges: ['ability:demon-spikes:charges'],
   cost: {
     'ability:demon-spikes:charges': 1,
     'pain:current': 200

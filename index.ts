@@ -4,7 +4,7 @@ import { IWorld, DefaultWorld } from './src/world.js'
 import { IAbilityTemplate, IPassiveTemplate } from './src/ability.js'
 import { IModifier } from './src/modifier'
 import dhVengeance from './src/templates/dh/vengeance'
-import savedya from './src/templates/dh/savedya'
+import newSavedya from './src/templates/dh/savedya'
 import savedya_gg from './src/templates/dh/savedya_greenglaives'
 import consts from './src/consts'
 import * as _debug from 'debug'
@@ -20,7 +20,7 @@ for (let run = 0; run < runs; run++) {
   let endTime
   const w = DefaultWorld() as IWorld
 
-  const e = Object.assign({}, savedya) as IEntity
+  const e = Object.assign({}, newSavedya()) as IEntity
 
   const idiot = DefaultBossEntity()
   idiot.slug = 'idiot'
@@ -30,50 +30,68 @@ for (let run = 0; run < runs; run++) {
   _.SpawnEntity(w, idiot)
 
   let first = true
-  for (let i = 0; i < 40 * 300; i++) {
-    start('tick')
+  for (let i = 0; i < 25 * 300; i++) {
+    //start('tick')
     _.TickWorld(w)
-    end('tick')
+    //end('tick')
 
     if (!_.IsOnGCD(e)) {
-      start('casts')
+      //start('casts')
 
+      //start(`cast:'empower-wards'`)
       if (_.CastAbilityByName(w, e, 'empower-wards')) {
-        end('casts')
+        //end('casts')
+        //end(`cast:'empower-wards'`)
         continue
       }
+      //start(`cast:'demon-spikes'`)
       if (_.CastAbilityByName(w, e, 'demon-spikes')) {
-        end('casts')
+        //end('casts')
+        //end(`cast:'demon-spikes'`)
         continue
       }
+      //start(`cast:'soul-carver'`)
       if (_.CastAbilityByName(w, e, 'soul-carver', idiot)) {
-        end('casts')
+        //end('casts')
+        //end(`cast:'soul-carver'`)
         continue
       }
+      //start(`cast:'sigil-of-flame'`)
       if (_.CastAbilityByName(w, e, 'sigil-of-flame', idiot)) {
-        end('casts')
+        //end('casts')
+        //end(`cast:'sigil-of-flame'`)
         continue
       }
+      //start(`cast:'immolation-aura'`)
       if (_.CastAbilityByName(w, e, 'immolation-aura')) {
-        end('casts')
+        //end('casts')
+        //end(`cast:'immolation-aura'`)
         continue
       }
+      //start(`cast:'spirit-bomb'`)
       if (e['fragment:count'] >= 4 && _.CastAbilityByName(w, e, 'spirit-bomb')) {
-        end('casts')
+        //end('casts')
+        //end(`cast:'spirit-bomb'`)
         continue
       }
+      //start(`cast:'fracture'`)
       if (e['pain:current'] >= 300 && _.CastAbilityByName(w, e, 'fracture', idiot)) {
-        end('casts')
+        //end('casts')
+        //end(`cast:'fracture'`)
         continue
       }
+      //start(`cast:'shear'`)
       if (_.CastAbilityByName(w, e, 'shear', idiot)) {
-        end('casts')
+        //end('casts')
+        //end(`cast:'shear'`)
         continue
       }
     }
   }
   endTime = now()
   total += endTime - startTime
+  //debug('This time:', endTime - startTime)
+  //dump()
 }
 console.log('Average time:', total / runs)
 dump()
