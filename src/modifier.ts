@@ -13,12 +13,6 @@ interface IDropFunc {
 interface ITickFunc {
   (w: IWorld, s: IEntity, e: IEntity): void
 }
-interface IPassiveTemplate {
-  id: number
-  slug: string
-  attributes: { [key: string]: number }
-}
-export { IPassiveTemplate }
 interface IModifierTemplate {
   id: number
   slug: string

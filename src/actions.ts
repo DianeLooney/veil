@@ -1,5 +1,5 @@
-import { IAbility } from './ability'
-import { IModifier, ITickerTemplate, IModifierTemplate, IPassiveTemplate, ITickerInstance, IModifierInstance } from './modifier'
+import { IPassiveTemplate, IAbilityTemplate, IAbilityInstance } from './ability'
+import { IModifier, ITickerTemplate, IModifierTemplate, ITickerInstance, IModifierInstance } from './modifier'
 import { IEntity, IPosition } from './entity'
 import { IItem } from './item'
 import { IWorld } from './world'
@@ -91,31 +91,23 @@ const TickWorld = (w: IWorld): void => {
   end('loop3')
   start('loop4')
   w.entities.forEach(e => {
-    let unhastedRate = e['spell:recharge-rate:unhasted']
-    let hastedRate = e['spell:recharge-rate:hasted']
-    for (let k in e.abilities) {
-      let a = e.abilities[k]
-      if (a.cooldown == 0 || !a.cooldown || !a.recharges) {
-        continue
-      }
-      start('loop4-1')
-      let cd = a.recharges
-      let currentCD = e[cd]
-      let cap = e[cd + ':cap']
-      e[cd] = Math.min(cap, currentCD + unhastedRate / a.cooldown)
-      end('loop4-1')
+    let changes = false
+    while (e.rechargingAbilities.length > 0 && e.rechargingAbilities[0].willFinishCharging <= w.now) {
+      let a = e.rechargingAbilities[0]
+      verbose(`handling charges for ${a.template.slug}: ${a.willFinishCharging}`)
 
-      start('loop4-2')
-      a.hastedRecharges.forEach(cd => {
-        let cap = 1
-        if (e[cd + ':cap'] !== undefined) {
-          cap = e[cd + ':cap']
-        }
-        if (e[cd] !== cap) {
-          e[cd] = Math.min(cap, e[cd] + hastedRate / a.cooldown)
-        }
-      })
-      end('loop4-2')
+      a.currentCharges = Math.min(a.template.chargeMax, a.currentCharges + 1)
+      if (a.currentCharges < a.template.chargeMax) {
+        a.startedCharging = a.willFinishCharging
+        a.willFinishCharging =
+          a.startedCharging + a.template.cooldown * (a.template.cooldownIsHasted ? 1 / (1 + e['haste']) : 1) * w._second
+      } else {
+        e.rechargingAbilities.splice(0, 1)
+      }
+      changes = true
+    }
+    if (changes) {
+      e.rechargingAbilities.sort((x, y) => x.willFinishCharging - y.willFinishCharging)
     }
   })
   end('loop4')
@@ -211,19 +203,68 @@ const UnequipItem = (w: IWorld, e: IEntity, slot: string): void => {
   //TODO: Some reporting
 }
 export { UnequipItem }
-const CastAbilityByName = (w: IWorld, e: IEntity, slug: string, ...targets: IEntity[]): void => {
+const CastAbilityByName = (w: IWorld, e: IEntity, slug: string, ...targets: IEntity[]): boolean => {
   let a = e.abilities[slug]
   if (a) {
-    a.cast(w, ...targets)
+    return CastAbilityByReference(w, e, a, ...targets)
   } else {
     //TODO: some error message
   }
 }
 export { CastAbilityByName }
-const CastAbilityByReference = (w: IWorld, e: IEntity, a: IAbility, ...targets: IEntity[]): void => {
-  a.cast(w, ...targets)
+const CastAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...targets: IEntity[]): boolean => {
+  let a = i.template
+  if (a.onGCD && IsOnGCD(e)) {
+    return false
+  }
+  if (a.cooldown > 0 && i.currentCharges < 1) {
+    return false
+  }
+  for (let i in a.requires) {
+    if (e[i] < a.requires[i]) {
+      return false
+    }
+  }
+  for (let i in a.cost) {
+    if (e[i] < a.cost[i]) {
+      return false
+    }
+  }
+  i.currentCharges--
+  if (a.cooldown > 0) {
+    i.startedCharging = w.now
+    i.willFinishCharging = w.now + a.cooldown * (a.cooldownIsHasted ? 1 / (1 + e['haste']) : 1) * w._second
+    e.rechargingAbilities.push(i)
+    e.rechargingAbilities.sort((x, y) => x.willFinishCharging - y.willFinishCharging)
+  }
+  for (let i in a.cost) {
+    e[i] -= a.cost[i]
+  }
+
+  if (targets.length > 0) {
+    debug(`${e.slug} casting ${a.slug} on targets: ${targets.toString()}`)
+    targets.forEach(t => a.onCast.forEach(h => h(w, e, t)))
+  } else {
+    debug(`${e.slug} casting ${a.slug}`)
+    a.onCast.forEach(h => h(w, e))
+  }
+  if (a.triggersGCD) {
+    TriggerGCD(e)
+  }
+  return true
 }
 export { CastAbilityByReference }
+const CastFreeAbilityByTemplate = (w: IWorld, e: IEntity, tmpl: IAbilityTemplate, ...targets: IEntity[]): void => {
+  if (targets.length > 0) {
+    targets.forEach(t => tmpl.onCast.forEach(h => h(w, e, t)))
+  } else {
+    tmpl.onCast.forEach(h => h(w, e))
+  }
+  if (tmpl.triggersGCD) {
+    TriggerGCD(e)
+  }
+}
+export { CastFreeAbilityByTemplate }
 const DealDamage = (e: IEntity, t: IEntity, args: any): void => {
   let a: number = 0
   switch (args.type) {
@@ -312,26 +353,32 @@ const DealHealing = (e: IEntity, t: IEntity, args: any): void => {
   report('HEALING_DONE', args)
 }
 export { DealHealing }
-const Kill = (e: IEntity, a: IAbility): void => {
+const Kill = (e: IEntity, a: IAbilityTemplate): void => {
   e.alive = false
   e.health = 0
   report('ENTITY_DIED', { unit: e, killingBlow: a })
 }
 export { Kill }
-const TeachAbility = (w: IWorld, e: IEntity, a: IAbility): void => {
+const TeachAbility = (w: IWorld, e: IEntity, a: IAbilityTemplate): void => {
+  let x: IAbilityInstance = {
+    template: a,
+    currentCharges: a.chargeMax,
+    startedCharging: -1,
+    willFinishCharging: -1
+  }
+  e.restingAbilities.push(x)
+  e.abilities[a.slug] = x
+  for (let attr in a.attributes) {
+    GainAttribute(e, attr, a.attributes[attr])
+  }
+  report('ABILITY_LEARNED', { entity: e, ability: a })
   if (!e.abilities[a.slug]) {
-    e.abilities[a.slug] = a
-    a.learn(w, e)
-    report('ABILITY_LEARNED', { entity: e, ability: a })
+    e.abilities[a.slug] = x
   }
 }
 export { TeachAbility }
-const UnteachAbility = (w: IWorld, e: IEntity, a: IAbility): void => {
-  if (e.abilities[a.slug]) {
-    e.abilities[a.slug].unlearn(this, e)
-    e.abilities[a.slug] = undefined
-    report('ABILITY_UNLEARNED', { entity: e, ability: a })
-  }
+const UnteachAbility = (w: IWorld, e: IEntity, a: IAbilityInstance): void => {
+  //Ignored for now
 }
 export { UnteachAbility }
 

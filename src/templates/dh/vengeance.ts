@@ -2,8 +2,8 @@ import { IEntity, DefaultEntity } from '../../Entity'
 import { IItem } from '../../item'
 import { IWorld } from '../../world'
 import * as _ from '../../actions'
-import { IAbility, DefaultAbility, DefaultPassive } from '../../Ability'
-import { DefaultModifier, IModifier, IModifierTemplate, IPassiveTemplate, ITickerTemplate } from '../../Modifier'
+import { IAbilityTemplate, AbilityDefaults, IPassiveTemplate } from '../../Ability'
+import { DefaultModifier, IModifier, IModifierTemplate, ITickerTemplate } from '../../Modifier'
 import { sequence, rppm } from '../../rng'
 import report from '../../report'
 import * as _debug from 'debug'
@@ -11,11 +11,14 @@ const debug = _debug('vengeance')
 const verbose = _debug('verbose:vengeance')
 
 import artifactMappings from '../../consts/artifactMappings'
-const soulFragmentConsume = Object.assign(Object.create(DefaultPassive), {
+
+const soulFragmentConsume: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   id: 204255,
-  slug: 'soul-fragment-consume'
+  slug: 'soul-fragment-consume',
+  onGCD: false,
+  triggersGCD: false
 })
-const soulFragmentSpawn = Object.assign(Object.create(DefaultPassive), {
+const soulFragmentSpawn = Object.assign({}, AbilityDefaults, {
   id: 204255,
   slug: 'soul-fragment-spawn'
 })
@@ -68,7 +71,7 @@ const painbringerMod: IModifierTemplate = {
   duration: 4,
   durationIsHasted: false
 }
-const shear = Object.assign(Object.create(DefaultAbility), {
+const shear = Object.assign({}, AbilityDefaults, {
   id: 203782,
   slug: 'shear',
   onCast: [
@@ -102,7 +105,7 @@ const shear = Object.assign(Object.create(DefaultAbility), {
     }
   ]
 })
-const fracture = Object.assign(Object.create(DefaultAbility), {
+const fracture = Object.assign({}, AbilityDefaults, {
   id: 209795,
   slug: 'fracture',
   cost: {
@@ -110,17 +113,17 @@ const fracture = Object.assign(Object.create(DefaultAbility), {
   },
   onCast: [
     (w: IWorld, e: IEntity, t: IEntity) => {
-      _.CastAbilityByReference(w, e, fractureMainHand, t)
+      _.CastFreeAbilityByTemplate(w, e, fractureMainHand, t)
       e.delays.push({
         when: w.now + 0.125 * w._second,
         func: (w: IWorld, e: IEntity): void => {
-          _.CastAbilityByReference(w, e, fractureOffHand, t)
+          _.CastFreeAbilityByTemplate(w, e, fractureOffHand, t)
         }
       })
     }
   ]
 })
-const fractureMainHand = Object.assign(Object.create(DefaultAbility), {
+const fractureMainHand: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   id: 225919,
   slug: 'fracture-mh',
   onGCD: false,
@@ -138,7 +141,7 @@ const fractureMainHand = Object.assign(Object.create(DefaultAbility), {
     }
   ]
 })
-const fractureOffHand = Object.assign(Object.create(DefaultAbility), {
+const fractureOffHand: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   id: 225921,
   slug: 'fracture-oh',
   onGCD: false,
@@ -156,7 +159,7 @@ const fractureOffHand = Object.assign(Object.create(DefaultAbility), {
     }
   ]
 })
-const spiritBomb = Object.assign(Object.create(DefaultAbility), {
+const spiritBomb: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   slug: 'spirit-bomb',
   requires: {
     ['fragment:count']: 1
@@ -210,15 +213,9 @@ const sigilOfFlameTicker: ITickerTemplate = {
   interval: 1,
   intervalIsHasted: false
 }
-const sigilOfFlame = Object.assign(Object.create(DefaultAbility), {
+const sigilOfFlame: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   slug: 'sigil-of-flame',
   cooldown: 30,
-  recharges: 'ability:sigil-of-flame:cooldown',
-  cost: { ['ability:sigil-of-flame:cooldown']: 1 },
-  attributes: {
-    'ability:sigil-of-flame:cooldown': 1,
-    'ability:sigil-of-flame:cooldown:cap': 1
-  },
   onCast: [
     (w: IWorld, e: IEntity, t: IEntity) => {
       let x = t.position
@@ -240,7 +237,7 @@ const sigilOfFlame = Object.assign(Object.create(DefaultAbility), {
       })
     }
   ]
-}) as IAbility
+})
 
 const demonSpikesMod: IModifierTemplate = {
   id: 203819,
@@ -259,18 +256,14 @@ const defensiveSpikesMod: IModifierTemplate = {
   attributes: { '+parry': 0.1 }
 }
 
-const demonSpikesSpell = Object.assign(Object.create(DefaultAbility), {
+const demonSpikesSpell: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   slug: 'demon-spikes',
   cooldown: 12,
-
+  chargeMax: 2,
   hastedRecharges: ['ability:demon-spikes:charges'],
   cost: {
     'ability:demon-spikes:charges': 1,
     'pain:current': 200
-  },
-  attributes: {
-    'ability:demon-spikes:charges': 2,
-    'ability:demon-spikes:charges:cap': 2
   },
   onGCD: false,
   triggersGCD: false,
@@ -311,12 +304,10 @@ const immolationAuraTicker: ITickerTemplate = {
   interval: 1,
   intervalIsHasted: false
 }
-const immolationAura = Object.assign(Object.create(DefaultAbility), {
+const immolationAura: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   slug: 'immolation-aura',
   cooldown: 15,
-  hastedRecharges: ['ability:immolation-aura:cooldown'],
-  cost: { 'ability:immolation-aura:cooldown': 1 },
-  attributes: { 'ability:immolation-aura:cooldown': 1 },
+  cooldownIsHasted: true,
   onCast: [
     (w: IWorld, e: IEntity) => {
       e['pain:current'] = Math.min(e['pain:max'], e['pain:current'] + 80)
@@ -332,7 +323,7 @@ const immolationAura = Object.assign(Object.create(DefaultAbility), {
       _.ApplyTicker(w, e, e, immolationAuraTicker)
     }
   ]
-}) as IAbility
+})
 
 const soulCarverTicker: ITickerTemplate = {
   id: -2,
@@ -358,12 +349,9 @@ const soulCarverTicker: ITickerTemplate = {
   interval: 1,
   intervalIsHasted: false
 }
-const soulCarver = Object.assign(Object.create(DefaultAbility), {
+const soulCarver: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   slug: 'soul-carver',
   cooldown: 45,
-  recharges: 'ability:soul-carver:cooldown',
-  cost: { 'ability:soul-carver:cooldown': 1 },
-  attributes: { 'ability:soul-carver:cooldown': 1, 'ability:soul-carver:cooldown:cap': 1 },
   onCast: [
     (w: IWorld, e: IEntity, t: IEntity) => {
       spawnFragment(w, e, false)
@@ -396,17 +384,9 @@ const empowerWardsMod: IModifierTemplate = {
   duration: 6,
   durationIsHasted: false
 }
-const empowerWards = Object.assign(Object.create(DefaultAbility), {
+const empowerWards: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   slug: 'empower-wards',
   cooldown: 20,
-  recharges: 'ability:empower-wards:cooldown',
-  cost: {
-    'ability:empower-wards:cooldown': 1
-  },
-  attributes: {
-    'ability:empower-wards:cooldown': 1,
-    'ability:empower-wards:cooldown:cap': 1
-  },
   onGCD: false,
   triggersGCD: false,
   onCast: [
@@ -414,7 +394,7 @@ const empowerWards = Object.assign(Object.create(DefaultAbility), {
       _.ApplyMod(w, e, e, empowerWardsMod)
     }
   ]
-}) as IAbility
+})
 const increasedThreatPassive: IPassiveTemplate = {
   id: 218256,
   slug: 'empower-wards',
@@ -454,45 +434,48 @@ const arcaneAcuityPassive: IPassiveTemplate = {
     '+crit': 0.01
   }
 }
-const artifactTraitsById = {
-  212819: function willOfTheIllidari(rank: number): any {
-    return Object.assign(Object.create(DefaultPassive), {
+interface iRankHandler {
+  (rank: number): IPassiveTemplate
+}
+const artifactPassivesById: { [key: number]: iRankHandler } = {
+  212819: function willOfTheIllidari(rank: number): IPassiveTemplate {
+    return {
       id: 212819,
       slug: 'will-of-the-illidari',
       attributes: {
         '*maxHealth': 1.0 + 0.01 * rank
       }
-    })
+    }
   },
-  214909: function soulgorger(rank: number): any {
-    return Object.assign(Object.create(DefaultPassive), {
+  214909: function soulgorger(rank: number): IPassiveTemplate {
+    return {
       id: 214909,
       slug: 'soulgorger',
       attributes: {
         '*armor': 1.1
       }
-    })
+    }
   },
-  211309: function artificialStamina(rank: number): any {
-    return Object.assign(Object.create(DefaultPassive), {
+  211309: function artificialStamina(rank: number): IPassiveTemplate {
+    return {
       id: 212819,
       slug: 'artificial-stamina',
       attributes: {
         '*stam:rating': 1.0 + 0.01 * rank
       }
-    })
+    }
   },
-  226829: function artificialDamage(rank: number): any {
-    return Object.assign(Object.create(DefaultPassive), {
+  226829: function artificialDamage(rank: number): IPassiveTemplate {
+    return {
       id: 212819,
       slug: 'artificial-damage',
       attributes: {
         '*damage': 1.0 + 0.0065 * (Math.min(rank, 52) + 6)
       }
-    })
+    }
   },
-  241091: function illidariDurability(rank: number): any {
-    return Object.assign(Object.create(DefaultPassive), {
+  241091: function illidariDurability(rank: number): IPassiveTemplate {
+    return {
       id: 212819,
       slug: 'illidari-durability',
       attributes: {
@@ -501,52 +484,52 @@ const artifactTraitsById = {
         '*armor': 1.2
         //TODO: Pet damage done
       }
-    })
+    }
   },
-  207343: function aldrachiDesign(rank: number): any {
-    return Object.assign(Object.create(DefaultPassive), {
+  207343: function aldrachiDesign(rank: number): IPassiveTemplate {
+    return {
       id: 207343,
       slug: 'aldrachi-design',
       attributes: {
         '+parry': 0.04
       }
-    })
+    }
   },
-  212829: function defensiveSpikes(rank: number): any {
-    return Object.assign(Object.create(DefaultPassive), {
+  212829: function defensiveSpikes(rank: number): IPassiveTemplate {
+    return {
       id: 212829,
       slug: 'defensive-spikes',
       attributes: {
         'trait:defensive-spikes:rank': rank
       }
-    })
+    }
   },
-  207387: function painbringer(rank: number): any {
-    return Object.assign(Object.create(DefaultPassive), {
+  207387: function painbringer(rank: number): IPassiveTemplate {
+    return {
       id: 207387,
       slug: 'painbringer',
       attributes: {
         'trait:painbringer:rank': rank
       }
-    })
+    }
   },
-  212827: function shatterTheSouls(rank: number): any {
-    return Object.assign(Object.create(DefaultPassive), {
+  212827: function shatterTheSouls(rank: number): IPassiveTemplate {
+    return {
       id: 212827,
       slug: 'shatter-the-souls',
       attributes: {
         'trait:shatter-the-souls:rank': rank
       }
-    })
+    }
   },
-  213017: function fueledByPain(rank: number): any {
-    return Object.assign(Object.create(DefaultPassive), {
+  213017: function fueledByPain(rank: number): IPassiveTemplate {
+    return {
       id: 213017,
       slug: 'fueled-by-pain',
       attributes: {
         'trait:fueled-by-pain:rank': rank
       }
-    })
+    }
   }
 }
 const enchantsPassive: IPassiveTemplate = {
@@ -589,14 +572,14 @@ const DefaultVengeance = function() {
           i.artifactTraits.forEach(t => {
             totalRanks += t.rank
             let spellId = artifactMappings[t.id][t.rank - 1]
-            if (artifactTraitsById[spellId] !== undefined) {
-              _.TeachAbility(w, e, artifactTraitsById[spellId](t.rank))
+            if (artifactPassivesById[spellId] !== undefined) {
+              _.TeachPassive(w, e, artifactPassivesById[spellId](t.rank))
             } else {
               verbose(`unrecognized artifact trait: ${spellId} (rank ${t.rank})`)
             }
           })
-          _.TeachAbility(w, e, artifactTraitsById[211309](totalRanks))
-          _.TeachAbility(w, e, artifactTraitsById[226829](totalRanks))
+          _.TeachPassive(w, e, artifactPassivesById[211309](totalRanks))
+          _.TeachPassive(w, e, artifactPassivesById[226829](totalRanks))
         }
       }
     ],
@@ -607,14 +590,14 @@ const DefaultVengeance = function() {
           i.artifactTraits.forEach(t => {
             totalRanks += t.rank
             let spellId = artifactMappings[t.id][t.rank - 1]
-            if (artifactTraitsById[spellId] !== undefined) {
-              _.UnteachAbility(w, e, artifactTraitsById[spellId](t.rank))
+            if (artifactPassivesById[spellId] !== undefined) {
+              _.UnteachPassive(w, e, artifactPassivesById[spellId](t.rank))
             } else {
               verbose(`unrecognized artifact trait: ${spellId} (rank ${t.rank})`)
             }
           })
-          _.UnteachAbility(w, e, artifactTraitsById[211309](totalRanks))
-          _.UnteachAbility(w, e, artifactTraitsById[226829](totalRanks))
+          _.UnteachPassive(w, e, artifactPassivesById[211309](totalRanks))
+          _.UnteachPassive(w, e, artifactPassivesById[226829](totalRanks))
         }
       }
     ],

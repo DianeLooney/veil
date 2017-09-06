@@ -1,9 +1,9 @@
 import report from './report'
-import { IAbility } from './ability'
+import { IAbilityTemplate, IPassiveTemplate, IAbilityInstance } from './ability'
 import { IWorld } from './world'
 import { IModifier } from './modifier'
 import { IItem } from './item'
-import { ITickerTemplate, ITickerInstance, IModifierTemplate, IModifierInstance, IPassiveTemplate } from './modifier'
+import { ITickerTemplate, ITickerInstance, IModifierTemplate, IModifierInstance } from './modifier'
 import consts from './consts'
 import attributes from './templates/playerAttributes'
 import bossAttributes from './templates/bossAttributes'
@@ -74,7 +74,9 @@ interface IEntity {
   }
   _attributes: any
   rng: { [key: string]: any }
-  abilities: { [key: string]: IAbility }
+  abilities: { [key: string]: IAbilityInstance }
+  rechargingAbilities: IAbilityInstance[]
+  restingAbilities: IAbilityInstance[]
   modifiers: IModifier[]
   tickers: ITickerInstance[]
   mods: IModifierInstance[]
@@ -100,6 +102,9 @@ const DefaultEntity = function(): IEntity {
     health: 100,
     friendly: true,
     alive: true,
+    abilities: {},
+    rechargingAbilities: [],
+    restingAbilities: [],
     _attributes: attributes,
     position: { x: 0, y: 0 },
     items: {
@@ -120,7 +125,6 @@ const DefaultEntity = function(): IEntity {
       mainHand: undefined,
       offHand: undefined
     },
-    abilities: {},
     modifiers: [],
     tickers: [],
     mods: [],
@@ -144,8 +148,11 @@ const DefaultBossEntity = function(): IEntity {
     level: 1,
     health: 100,
     hitradius: 15,
+    abilities: {},
     friendly: false,
     alive: true,
+    rechargingAbilities: [],
+    restingAbilities: [],
     _attributes: bossAttributes,
     position: { x: 0, y: 0 },
     items: {
@@ -166,7 +173,6 @@ const DefaultBossEntity = function(): IEntity {
       mainHand: undefined,
       offHand: undefined
     },
-    abilities: {},
     modifiers: [],
     tickers: [],
     mods: [],

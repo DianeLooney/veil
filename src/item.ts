@@ -1,4 +1,3 @@
-import { IAbility } from './ability'
 interface IItem {
   id: number
   slug: string

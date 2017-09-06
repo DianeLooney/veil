@@ -1,4 +1,3 @@
-import { IAbility } from './ability'
 import { IModifier } from './modifier'
 import { IEntity } from './entity'
 import { IItem } from './item'
