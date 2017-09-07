@@ -33,7 +33,7 @@ const DespawnEntity = (w: IWorld, e: IEntity): void => {
 export { DespawnEntity }
 const TickWorld = (w: IWorld): void => {
   w.now += w._tickDelta
-  ////start('loop2')
+  //start('loop2')
   w.entities.forEach(e => {
     e.modifiers.forEach(m => {
       if (m._nextInterval <= w.now) {
@@ -70,19 +70,16 @@ const TickWorld = (w: IWorld): void => {
       //verbose`Expired mod ${x.template.slug} at ${w.now / 1000}`)
     }
   })
-  ////end('loop2')
-  ////start('loop3')
+  //end('loop2')
+  //start('loop3')
   w.entities.forEach(e => {
-    e.delays = e.delays.filter(d => {
-      if (d.when <= w.now) {
-        d.func(w, e)
-        return false
-      }
-      return true
-    })
+    while (e.delays.length > 0 && e.delays[0].when <= w.now) {
+      e.delays[0].func(w, e)
+      e.delays.splice(0, 1)
+    }
   })
-  ////end('loop3')
-  ////start('loop4')
+  //end('loop3')
+  //start('loop4')
   w.entities.forEach(e => {
     let changes = false
     while (e.rechargingAbilities.length > 0 && e.rechargingAbilities[0].willFinishCharging <= w.now) {
@@ -104,10 +101,15 @@ const TickWorld = (w: IWorld): void => {
       e.rechargingAbilities.sort((x, y) => x.willFinishCharging - y.willFinishCharging)
     }
   })
-  ////end('loop4')
+  //end('loop4')
   report('WORLD_TICKED', { time: w.now / w._second })
 }
 export { TickWorld }
+const Delayed = function(w: IWorld, e: IEntity, f: any) {
+  e.delays.push(f)
+  e.delays.sort((x, y) => x.when - y.when)
+}
+export { Delayed }
 const LoadDefaultAttributes = function(e: IEntity) {
   let d = build(parse(e._attributes))
   for (let i in d) {
@@ -528,7 +530,7 @@ const IsOnGCD = (w: IWorld, e: IEntity): boolean => {
   if (e['gcd:refreshes'] === undefined) {
     return false
   }
-  return e['gcd:refreshes'] < w.now
+  return e['gcd:refreshes'] > w.now
 }
 export { IsOnGCD }
 
