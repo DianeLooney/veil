@@ -15,20 +15,19 @@ import { start, end, dump } from './perf'
 
 let total = 0
 let runs = 100
+let playerAttrs = _.BuildDefaultAttributesCache(newSavedya())
+let bossAttrs = _.BuildDefaultAttributesCache(DefaultBossEntity())
 for (let run = 0; run < runs; run++) {
   let startTime = now()
   let endTime
   const w = DefaultWorld() as IWorld
-
   const e = Object.assign({}, newSavedya()) as IEntity
-
   const idiot = DefaultBossEntity()
   idiot.slug = 'idiot'
-  _.InitEntity(w, e)
-  _.InitEntity(w, idiot)
+  _.InitEntity(w, e, playerAttrs)
+  _.InitEntity(w, idiot, bossAttrs)
   _.SpawnEntity(w, e)
   _.SpawnEntity(w, idiot)
-
   let first = true
   for (let i = 0; i < 25 * 300; i++) {
     //start('tick')
