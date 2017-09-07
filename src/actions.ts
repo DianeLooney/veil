@@ -33,13 +33,6 @@ const DespawnEntity = (w: IWorld, e: IEntity): void => {
 export { DespawnEntity }
 const TickWorld = (w: IWorld): void => {
   w.now += w._tickDelta
-  ////start('loop1')
-  w.entities.forEach(e => {
-    if (e['gcd:remaining'] !== undefined && e['gcd:remaining'] > 0) {
-      e['gcd:remaining'] -= w._tickDelta
-    }
-  })
-  ////end('loop1')
   ////start('loop2')
   w.entities.forEach(e => {
     e.modifiers.forEach(m => {
@@ -216,7 +209,7 @@ export { CastAbilityByName }
 const CastAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...targets: IEntity[]): boolean => {
   let a = i.template
   ////start('onGCD')
-  if (a.onGCD && IsOnGCD(e)) {
+  if (a.onGCD && IsOnGCD(w, e)) {
     ////end('onGCD')
     return false
   }
@@ -270,7 +263,7 @@ const CastAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...t
   //end('targets.length')
   //start('triggerGCD')
   if (a.triggersGCD) {
-    TriggerGCD(e)
+    TriggerGCD(w, e)
   }
   //end('triggerGCD')
   return true
@@ -281,9 +274,6 @@ const CastFreeAbilityByTemplate = (w: IWorld, e: IEntity, tmpl: IAbilityTemplate
     targets.forEach(t => tmpl.onCast.forEach(h => h(w, e, t)))
   } else {
     tmpl.onCast.forEach(h => h(w, e))
-  }
-  if (tmpl.triggersGCD) {
-    TriggerGCD(e)
   }
 }
 export { CastFreeAbilityByTemplate }
@@ -529,12 +519,16 @@ const ApplyTicker = (w: IWorld, src: IEntity, tar: IEntity, t: ITickerTemplate):
 
 export { ApplyTicker }
 
-const TriggerGCD = (e: IEntity): void => {
-  e['gcd:remaining'] = e['gcd:time']
+const TriggerGCD = (w: IWorld, e: IEntity): void => {
+  e['gcd:started'] = w.now
+  e['gcd:refreshes'] = w.now + e['gcd:time']
 }
 export { TriggerGCD }
-const IsOnGCD = (e: IEntity): boolean => {
-  return e['gcd:remaining'] > 0
+const IsOnGCD = (w: IWorld, e: IEntity): boolean => {
+  if (e['gcd:refreshes'] === undefined) {
+    return false
+  }
+  return e['gcd:refreshes'] < w.now
 }
 export { IsOnGCD }
 
