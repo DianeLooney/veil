@@ -24,7 +24,13 @@ const soulFragmentSpawn = Object.assign({}, AbilityDefaults, {
   slug: 'soul-fragment-spawn'
 })
 const spawnFragment = function(w: IWorld, e: IEntity, greater: boolean): void {
+<<<<<<< HEAD
   e.delays.push({
+=======
+  debug('spawning a soul-fragment')
+
+  _.Delayed(w, e, {
+>>>>>>> 68aa45e54e3b16558bd0038347e6490d4d5018b2
     when: w.now + w._second * 1.08,
     func: (w: IWorld, e: IEntity) => {
       if (e['fragment:expiration:time'].length >= 5) {
@@ -123,7 +129,7 @@ const fracture = Object.assign({}, AbilityDefaults, {
   onCast: [
     (w: IWorld, e: IEntity, t: IEntity) => {
       _.CastFreeAbilityByTemplate(w, e, fractureMainHand, t)
-      e.delays.push({
+      _.Delayed(w, e, {
         when: w.now + 0.125 * w._second,
         func: (w: IWorld, e: IEntity): void => {
           _.CastFreeAbilityByTemplate(w, e, fractureOffHand, t)
@@ -177,7 +183,12 @@ const spiritBomb: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
     (w: IWorld, e: IEntity) => {
       let x = e['fragment:count']
       consumeFragment(w, e, x)
+<<<<<<< HEAD
       e.delays.push({
+=======
+      debug('casting spirit bomb')
+      _.Delayed(w, e, {
+>>>>>>> 68aa45e54e3b16558bd0038347e6490d4d5018b2
         when: w.now + 0.125 * w._second,
         func: (w: IWorld, e: IEntity): void => {
           //TODO: target units in range of the caster intsead of his target
@@ -226,7 +237,7 @@ const sigilOfFlame: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   onCast: [
     (w: IWorld, e: IEntity, t: IEntity) => {
       let x = t.position
-      e.delays.push({
+      _.Delayed(w, e, {
         when: w.now + 2 * w._second,
         func: (w: IWorld, e: IEntity): void => {
           //TODO: Make this an AE spell

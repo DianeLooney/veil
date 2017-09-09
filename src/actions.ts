@@ -33,14 +33,7 @@ const DespawnEntity = (w: IWorld, e: IEntity): void => {
 export { DespawnEntity }
 const TickWorld = (w: IWorld): void => {
   w.now += w._tickDelta
-  ////start('loop1')
-  w.entities.forEach(e => {
-    if (e['gcd:remaining'] !== undefined && e['gcd:remaining'] > 0) {
-      e['gcd:remaining'] -= w._tickDelta
-    }
-  })
-  ////end('loop1')
-  ////start('loop2')
+  //start('loop2')
   w.entities.forEach(e => {
     e.modifiers.forEach(m => {
       if (m._nextInterval <= w.now) {
@@ -83,19 +76,16 @@ const TickWorld = (w: IWorld): void => {
       //verbose`Expired mod ${x.template.slug} at ${w.now / 1000}`)
     }
   })
-  ////end('loop2')
-  ////start('loop3')
+  //end('loop2')
+  //start('loop3')
   w.entities.forEach(e => {
-    e.delays = e.delays.filter(d => {
-      if (d.when <= w.now) {
-        d.func(w, e)
-        return false
-      }
-      return true
-    })
+    while (e.delays.length > 0 && e.delays[0].when <= w.now) {
+      e.delays[0].func(w, e)
+      e.delays.splice(0, 1)
+    }
   })
-  ////end('loop3')
-  ////start('loop4')
+  //end('loop3')
+  //start('loop4')
   w.entities.forEach(e => {
     let changes = false
     while (e.rechargingAbilities.length > 0 && e.rechargingAbilities[0].willFinishCharging <= w.now) {
@@ -117,10 +107,15 @@ const TickWorld = (w: IWorld): void => {
       e.rechargingAbilities.sort((x, y) => x.willFinishCharging - y.willFinishCharging)
     }
   })
-  ////end('loop4')
+  //end('loop4')
   report('WORLD_TICKED', { time: w.now / w._second })
 }
 export { TickWorld }
+const Delayed = function(w: IWorld, e: IEntity, f: any) {
+  e.delays.push(f)
+  e.delays.sort((x, y) => x.when - y.when)
+}
+export { Delayed }
 const LoadDefaultAttributes = function(e: IEntity) {
   let d = build(parse(e._attributes))
   for (let i in d) {
@@ -150,8 +145,45 @@ const LoadDefaultAttributes = function(e: IEntity) {
   }
 }
 export { LoadDefaultAttributes }
-const InitEntity = (w: IWorld, e: IEntity): void => {
-  LoadDefaultAttributes(e)
+const BuildDefaultAttributesCache = function(e: IEntity) {
+  return build(parse(e._attributes))
+}
+export { BuildDefaultAttributesCache }
+const AttachAttributesCache = function(e: IEntity, d: any) {
+  for (let i in d) {
+    let k = i
+    let r = d[k]
+    switch (typeof r.value) {
+      case 'function':
+        delete e[k]
+        Object.defineProperty(e, k, {
+          get: function() {
+            ////start(`attr[${k}]`)
+            if (e[`__${k}__`] === undefined) {
+              e[`__${k}__`] = r.value(e)
+            }
+            ////end(`attr[${k}]`)
+            return e[`__${k}__`]
+          },
+          set: function(v) {
+            console.error(`Unable to set attribute ${k} of ${e.slug}`)
+          }
+        })
+        break
+      default:
+        delete e[k]
+        e[k] = r.value
+    }
+  }
+}
+export { AttachAttributesCache }
+const InitEntity = (w: IWorld, e: IEntity, c?: any): void => {
+  if (c !== undefined) {
+    AttachAttributesCache(e, c)
+  } else {
+    LoadDefaultAttributes(e)
+  }
+
   e.onInit.forEach(h => h(w, e))
 }
 export { InitEntity }
@@ -222,7 +254,7 @@ export { CastAbilityByName }
 const CastAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...targets: IEntity[]): boolean => {
   let a = i.template
   ////start('onGCD')
-  if (a.onGCD && IsOnGCD(e)) {
+  if (a.onGCD && IsOnGCD(w, e)) {
     ////end('onGCD')
     return false
   }
@@ -277,7 +309,7 @@ const CastAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...t
   //end('targets.length')
   //start('triggerGCD')
   if (a.triggersGCD) {
-    TriggerGCD(e)
+    TriggerGCD(w, e)
   }
   //end('triggerGCD')
   return true
@@ -288,9 +320,6 @@ const CastFreeAbilityByTemplate = (w: IWorld, e: IEntity, tmpl: IAbilityTemplate
     targets.forEach(t => tmpl.onCast.forEach(h => h(w, e, t)))
   } else {
     tmpl.onCast.forEach(h => h(w, e))
-  }
-  if (tmpl.triggersGCD) {
-    TriggerGCD(e)
   }
 }
 export { CastFreeAbilityByTemplate }
@@ -536,12 +565,16 @@ const ApplyTicker = (w: IWorld, src: IEntity, tar: IEntity, t: ITickerTemplate):
 
 export { ApplyTicker }
 
-const TriggerGCD = (e: IEntity): void => {
-  e['gcd:remaining'] = e['gcd:time']
+const TriggerGCD = (w: IWorld, e: IEntity): void => {
+  e['gcd:started'] = w.now
+  e['gcd:refreshes'] = w.now + e['gcd:time']
 }
 export { TriggerGCD }
-const IsOnGCD = (e: IEntity): boolean => {
-  return e['gcd:remaining'] > 0
+const IsOnGCD = (w: IWorld, e: IEntity): boolean => {
+  if (e['gcd:refreshes'] === undefined) {
+    return false
+  }
+  return e['gcd:refreshes'] > w.now
 }
 export { IsOnGCD }
 

@@ -3,7 +3,8 @@
     "target": "es2017",
     "module": "commonjs",
     "sourceMap": true,
-    "outDir": "output",
+    "outDir": "bin",
+    "rootDir": "src",
     "watch": true,
     "typeRoots": ["node_modules/@types"],
     "types": ["node"]

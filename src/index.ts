@@ -1,41 +1,40 @@
-import { IEntity, DefaultEntity, DefaultBossEntity } from './src/entity'
-import * as _ from './src/actions'
-import { IWorld, DefaultWorld } from './src/world.js'
-import { IAbilityTemplate, IPassiveTemplate } from './src/ability.js'
-import { IModifier } from './src/modifier'
-import dhVengeance from './src/templates/dh/vengeance'
-import newSavedya from './src/templates/dh/savedya'
-import savedya_gg from './src/templates/dh/savedya_greenglaives'
-import consts from './src/consts'
+import { IEntity, DefaultEntity, DefaultBossEntity } from './entity'
+import * as _ from './actions'
+import { IWorld, DefaultWorld } from './world.js'
+import { IAbilityTemplate, IPassiveTemplate } from './ability.js'
+import { IModifier } from './modifier'
+import dhVengeance from './templates/dh/vengeance'
+import newSavedya from './templates/dh/savedya'
+import savedya_gg from './templates/dh/savedya_greenglaives'
+import consts from './consts'
 import * as _debug from 'debug'
 const debug = _debug('index')
 import * as microtime from 'microtime'
 var now = require('performance-now')
-import { start, end, dump } from './src/perf'
+import { start, end, dump } from './perf'
 
 let total = 0
 let runs = 100
+let playerAttrs = _.BuildDefaultAttributesCache(newSavedya())
+let bossAttrs = _.BuildDefaultAttributesCache(DefaultBossEntity())
 for (let run = 0; run < runs; run++) {
   let startTime = now()
   let endTime
   const w = DefaultWorld() as IWorld
-
   const e = Object.assign({}, newSavedya()) as IEntity
-
   const idiot = DefaultBossEntity()
   idiot.slug = 'idiot'
-  _.InitEntity(w, e)
-  _.InitEntity(w, idiot)
+  _.InitEntity(w, e, playerAttrs)
+  _.InitEntity(w, idiot, bossAttrs)
   _.SpawnEntity(w, e)
   _.SpawnEntity(w, idiot)
-
   let first = true
   for (let i = 0; i < 25 * 300; i++) {
     //start('tick')
     _.TickWorld(w)
     //end('tick')
 
-    if (!_.IsOnGCD(e)) {
+    if (!_.IsOnGCD(w, e)) {
       //start('casts')
 
       //start(`cast:'empower-wards'`)
