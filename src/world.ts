@@ -14,6 +14,27 @@ interface IWorld {
   entities: IEntity[]
   slug: string
 }
+
+const formatTime = function(n: number): string {
+  let x = Math.floor(n / 1000)
+  let millis = '' + (n - x * 1000)
+  while (millis.length < 3) {
+    millis = '0' + millis
+  }
+  n = x
+  x = Math.floor(n / 60)
+  let secs = '' + (n - x * 60)
+  while (secs.length < 2) {
+    secs = '0' + secs
+  }
+  let mins = '' + x
+  while (mins.length < 2) {
+    mins = ' ' + mins
+  }
+  return `${mins}:${secs}.${millis}`
+}
+export { formatTime }
+
 export { IWorld }
 const DefaultWorld = function(): IWorld {
   return {

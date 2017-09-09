@@ -1,6 +1,6 @@
 import { IEntity, DefaultEntity } from '../../Entity'
 import { IItem } from '../../item'
-import { IWorld } from '../../world'
+import { IWorld, formatTime } from '../../world'
 import * as _ from '../../actions'
 import { IAbilityTemplate, AbilityDefaults, IPassiveTemplate } from '../../Ability'
 import { DefaultModifier, IModifier, IModifierTemplate, ITickerTemplate } from '../../Modifier'
@@ -24,7 +24,6 @@ const soulFragmentSpawn = Object.assign({}, AbilityDefaults, {
   slug: 'soul-fragment-spawn'
 })
 const spawnFragment = function(w: IWorld, e: IEntity, greater: boolean): void {
-  debug('spawning a soul-fragment')
   e.delays.push({
     when: w.now + w._second * 1.08,
     func: (w: IWorld, e: IEntity) => {
@@ -34,14 +33,14 @@ const spawnFragment = function(w: IWorld, e: IEntity, greater: boolean): void {
       }
       e['fragment:expiration:time'].push(w.now + w._second * 20)
       e['fragment:count'] += 1
-      debug('spawned a soul-fragment')
+      debug(`\t${formatTime(w.now)}\t${e.slug} spawns a soul-fragment`)
       //report('ABILITY_CASTED', { entity: e, spell: soulFragmentSpawn })
     }
   })
 }
 const consumeFragment = function(w: IWorld, e: IEntity, count: number): void {
   while (count > 0) {
-    debug('consuming a soul-fragment')
+    debug(`\t${formatTime(w.now)}\t${e.slug} consumes a soul-fragment`)
     count--
     e['fragment:expiration:time'].shift()
     e['fragment:count'] -= 1
@@ -144,7 +143,7 @@ const fractureMainHand: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
         source: e,
         target: t,
         type: 'PHYSICAL',
-        mhDamageNorm: 4.51,
+        mhDamageNorm: 4.51 * e['*vengeance:damage'] * e['damage'],
         ability: fractureMainHand
       })
       spawnFragment(w, e, false)
@@ -178,7 +177,6 @@ const spiritBomb: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
     (w: IWorld, e: IEntity) => {
       let x = e['fragment:count']
       consumeFragment(w, e, x)
-      debug('casting spirit bomb')
       e.delays.push({
         when: w.now + 0.125 * w._second,
         func: (w: IWorld, e: IEntity): void => {
@@ -196,7 +194,6 @@ const spiritBomb: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
           //TODO: Apply healing modifier
         }
       })
-      debug(`spent ${x} fragments on spirit-bomb`)
     }
   ]
 })
@@ -557,9 +554,14 @@ const DefaultVengeance = function() {
         _.TeachAbility(w, e, fracture)
         _.TeachAbility(w, e, spiritBomb)
         _.TeachAbility(w, e, demonSpikesSpell)
+        _.TeachAbility(w, e, immolationAura)
+        //_.TeachAbility(w, e, infernalStrike)
+        //_.TeachAbility(w, e, metamorphosisSpell)
+        //_.TeachAbility(w, e, soulCleave)
+        //_.TeachAbility(w, e, infernalStrike)
+        //_.TeachAbility(w, e, fieryBrandSpell)
         _.TeachAbility(w, e, sigilOfFlame)
         _.TeachAbility(w, e, empowerWards)
-        _.TeachAbility(w, e, immolationAura)
         _.TeachAbility(w, e, soulCarver)
 
         _.TeachAbility(w, e, fractureMainHand)

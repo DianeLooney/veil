@@ -1,8 +1,8 @@
 import { IPassiveTemplate, IAbilityTemplate, IAbilityInstance } from './ability'
 import { IModifier, ITickerTemplate, IModifierTemplate, ITickerInstance, IModifierInstance } from './modifier'
-import { IEntity, IPosition } from './entity'
+import { IEntity, IPosition, IVector } from './entity'
 import { IItem } from './item'
-import { IWorld } from './world'
+import { IWorld, formatTime } from './world'
 import { parse, build } from './templates/attributeParser'
 import report from './report'
 import { start, end } from './perf'
@@ -64,9 +64,15 @@ const TickWorld = (w: IWorld): void => {
         x.expires,
         x.nextTick + w._second * x.template.interval * (x.template.intervalIsHasted ? 1 / (1 + x.source['haste']) : 1)
       )
-      if (x.nextTick > w.now) {
+      if (next > w.now) {
+        x.nextTick = next
         e.tickers.push(x)
         e.tickers.sort((x, y) => x.nextTick - y.nextTick)
+      } else {
+        for (let a in x.template.attributes) {
+          LoseAttribute(e, a, x.template[a])
+        }
+        x.template.onDrop.forEach(h => h(e))
       }
     }
     while (e.mods[0] !== undefined && e.mods[0].expires <= w.now) {
@@ -241,6 +247,7 @@ const CastAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...t
       return false
     }
   }
+  debug(`\t${formatTime(w.now)}\t${e.slug} casts ${a.slug}`)
   //end('costs')
   i.currentCharges = i.currentCharges - 1
   //start('a.cooldown')
@@ -558,3 +565,11 @@ const EnemiesTouchingRadius = (w: IWorld, pos: IPosition, r: number): IEntity[] 
   return w.entities.filter(x => x.friendly === false && DistanceToUnitHitbox(pos, x) <= r)
 }
 export { EnemiesTouchingRadius }
+const UnitVector = (v: IVector): IVector => {
+  if (v.dx === 0 && v.dy === 0) {
+    return { dx: 1, dy: 0 }
+  }
+  let d = Math.sqrt(v.dx * v.dx + v.dy * v.dy)
+  return { dx: v.dx / d, dy: v.dy / d }
+}
+export { UnitVector }

@@ -39,7 +39,12 @@ interface IPosition {
   x: number
   y: number
 }
+interface IVector {
+  dx: number
+  dy: number
+}
 export { IPosition }
+export { IVector }
 interface IVector {
   dx: number
   dy: number
@@ -54,6 +59,7 @@ interface IEntity {
   hitradius: number
   friendly: boolean
   position: IPosition
+  facing: IVector
   items: {
     head: IItem
     neck: IItem
@@ -107,6 +113,7 @@ const DefaultEntity = function(): IEntity {
     restingAbilities: [],
     _attributes: attributes,
     position: { x: 0, y: 0 },
+    facing: { dx: 0, dy: 1 },
     items: {
       head: undefined,
       neck: undefined,
@@ -155,6 +162,7 @@ const DefaultBossEntity = function(): IEntity {
     restingAbilities: [],
     _attributes: bossAttributes,
     position: { x: 0, y: 0 },
+    facing: { dx: 0, dy: 1 },
     items: {
       head: undefined,
       neck: undefined,
