@@ -43,6 +43,16 @@ for (let run = 0; run < runs; run++) {
         //end(`cast:'empower-wards'`)
         continue
       }
+      if (_.CastAbilityByName(w, e, 'infernal-strike', idiot)) {
+        //end('casts')
+        //end(`cast:'infernal-strike'`)
+        continue
+      }
+      if (_.CastAbilityByName(w, e, 'metamorphosis', idiot)) {
+        //end('casts')
+        //end(`cast:'metamorphosis'`)
+        continue
+      }
       //start(`cast:'demon-spikes'`)
       if (_.CastAbilityByName(w, e, 'demon-spikes')) {
         //end('casts')

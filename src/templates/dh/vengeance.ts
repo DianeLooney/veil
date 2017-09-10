@@ -19,9 +19,80 @@ const soulFragmentConsume: IAbilityTemplate = Object.assign({}, AbilityDefaults,
   onGCD: false,
   triggersGCD: false
 })
+const infernalStrike: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
+  id: 189110,
+  slug: 'infernal-strike',
+
+  cooldown: 12,
+  chargeMax: 2,
+  cooldownIsHasted: true,
+
+  onGCD: false,
+  triggersGCD: false,
+
+  onCast: [
+    (w: IWorld, e: IEntity, t: IEntity) => {
+      let pos = Object.assign({}, t.position)
+      _.Delayed(w, e, {
+        when: w.now + 0.75 * w._second,
+        func: (w: IWorld, e: IEntity): void => {
+          e.position = pos
+          _.EnemiesTouchingRadius(w, pos, 6).forEach(tar => {
+            _.DealDamage(e, tar, {
+              source: e,
+              target: t,
+              type: 'FIRE',
+              attackpower: 3.16 * e['*vengeance:damage'] * e['damage'],
+              ability: shear
+            })
+          })
+        }
+      })
+    }
+  ]
+})
 const soulFragmentSpawn = Object.assign({}, AbilityDefaults, {
   id: 204255,
   slug: 'soul-fragment-spawn'
+})
+const metamorphosisModBase: ITickerTemplate = {
+  id: 187827,
+  slug: 'metamorphosis',
+  stackMode: 'EXTEND',
+  attributes: {
+    '*health:max': 1.3, //TODO: Artifact trait modifies this.
+    '*armor:rating': 2.0
+  },
+  duration: 0,
+  durationIsHasted: false,
+  onApply: [],
+  onDrop: [],
+  onInterval: [
+    (w: IWorld, s: IEntity, e: IEntity): void => {
+      e['pain:current'] += 70
+    }
+  ],
+  interval: 1,
+  intervalIsHasted: false
+}
+const metamorphosisModCasted: ITickerTemplate = Object.assign({}, metamorphosisModBase, {
+  duration: 15
+})
+const metamorphosisModProc: ITickerTemplate = Object.assign({}, metamorphosisModBase, {
+  duration: 5
+})
+const metamorphosis: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
+  id: 187827,
+  slug: 'metamorphosis',
+  cooldown: 180,
+  cooldownIsHasted: false,
+  onGCD: false,
+  triggersGCD: false,
+  onCast: [
+    (w: IWorld, e: IEntity) => {
+      _.ApplyMod(w, e, e, metamorphosisModCasted)
+    }
+  ]
 })
 const spawnFragment = function(w: IWorld, e: IEntity, greater: boolean): void {
   debug('spawning a soul-fragment')
@@ -271,7 +342,6 @@ const demonSpikesSpell: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   cooldown: 12,
   chargeMax: 2,
   cost: {
-    'ability:demon-spikes:charges': 1,
     'pain:current': 200
   },
   onGCD: false,
@@ -558,10 +628,9 @@ const DefaultVengeance = function() {
         _.TeachAbility(w, e, spiritBomb)
         _.TeachAbility(w, e, demonSpikesSpell)
         _.TeachAbility(w, e, immolationAura)
-        //_.TeachAbility(w, e, infernalStrike)
-        //_.TeachAbility(w, e, metamorphosisSpell)
+        _.TeachAbility(w, e, infernalStrike)
+        _.TeachAbility(w, e, metamorphosis)
         //_.TeachAbility(w, e, soulCleave)
-        //_.TeachAbility(w, e, infernalStrike)
         //_.TeachAbility(w, e, fieryBrandSpell)
         _.TeachAbility(w, e, sigilOfFlame)
         _.TeachAbility(w, e, empowerWards)
