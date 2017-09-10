@@ -38,7 +38,7 @@ const infernalStrike: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
         func: (w: IWorld, e: IEntity): void => {
           e.position = pos
           _.EnemiesTouchingRadius(w, pos, 6).forEach(tar => {
-            _.DealDamage(e, tar, {
+            _.DealDamage(w, e, tar, {
               source: e,
               target: t,
               type: 'FIRE',
@@ -63,6 +63,7 @@ const metamorphosisModBase: ITickerTemplate = {
     '*health:max': 1.3, //TODO: Artifact trait modifies this.
     '*armor:rating': 2.0
   },
+  sourcedAttributes: {},
   duration: 0,
   durationIsHasted: false,
   onApply: [],
@@ -90,7 +91,7 @@ const metamorphosis: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   triggersGCD: false,
   onCast: [
     (w: IWorld, e: IEntity) => {
-      _.ApplyMod(w, e, e, metamorphosisModCasted)
+      _.ApplyTicker(w, e, e, metamorphosisModCasted)
     }
   ]
 })
@@ -141,6 +142,7 @@ const painbringerMod: IModifierTemplate = {
   attributes: {
     '*dr:all': 0.97
   },
+  sourcedAttributes: undefined,
   duration: 4,
   durationIsHasted: false
 }
@@ -157,7 +159,7 @@ const shear = Object.assign({}, AbilityDefaults, {
       //end('shear:mult-calc')
 
       //start('shear:deal-damage')
-      _.DealDamage(e, t, {
+      _.DealDamage(w, e, t, {
         source: e,
         target: t,
         type: 'PHYSICAL',
@@ -212,7 +214,7 @@ const fractureMainHand: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   triggersGCD: false,
   onCast: [
     (w: IWorld, e: IEntity, t: IEntity) => {
-      _.DealDamage(e, t, {
+      _.DealDamage(w, e, t, {
         source: e,
         target: t,
         type: 'PHYSICAL',
@@ -230,7 +232,7 @@ const fractureOffHand: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   triggersGCD: false,
   onCast: [
     (w: IWorld, e: IEntity, t: IEntity) => {
-      _.DealDamage(e, t, {
+      _.DealDamage(w, e, t, {
         source: e,
         target: t,
         type: 'PHYSICAL',
@@ -256,7 +258,7 @@ const spiritBomb: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
         func: (w: IWorld, e: IEntity): void => {
           //TODO: target units in range of the caster intsead of his target
           _.EnemiesTouchingRadius(w, e.position, 8).forEach(tar => {
-            _.DealDamage(e, tar, {
+            _.DealDamage(w, e, tar, {
               source: e,
               target: tar,
               type: 'FIRE',
@@ -278,11 +280,12 @@ const sigilOfFlameTicker: ITickerTemplate = {
   duration: 6,
   durationIsHasted: false,
   attributes: {},
+  sourcedAttributes: {},
   onApply: [],
   onDrop: [],
   onInterval: [
     (w: IWorld, s: IEntity, e: IEntity): void => {
-      _.DealDamage(s, e, {
+      _.DealDamage(w, s, e, {
         source: s,
         target: e,
         type: 'FIRE',
@@ -305,7 +308,7 @@ const sigilOfFlame: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
         func: (w: IWorld, e: IEntity): void => {
           //TODO: Make this an AE spell
           _.EnemiesTouchingRadius(w, x, 8).forEach(y => {
-            _.DealDamage(e, y, {
+            _.DealDamage(w, e, y, {
               source: e,
               target: y,
               type: 'FIRE',
@@ -326,7 +329,8 @@ const demonSpikesMod: IModifierTemplate = {
   stackMode: 'EXTEND',
   duration: 6,
   durationIsHasted: false,
-  attributes: { '+parry': 0.2 }
+  attributes: { '+parry': 0.2 },
+  sourcedAttributes: undefined
 }
 const defensiveSpikesMod: IModifierTemplate = {
   id: 212871,
@@ -334,7 +338,8 @@ const defensiveSpikesMod: IModifierTemplate = {
   stackMode: 'EXTEND',
   duration: 3,
   durationIsHasted: false,
-  attributes: { '+parry': 0.1 }
+  attributes: { '+parry': 0.1 },
+  sourcedAttributes: undefined
 }
 
 const demonSpikesSpell: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
@@ -364,13 +369,14 @@ const immolationAuraTicker: ITickerTemplate = {
   duration: 6,
   durationIsHasted: false,
   attributes: {},
+  sourcedAttributes: {},
   onApply: [],
   onDrop: [],
   onInterval: [
     (w: IWorld, s: IEntity, e: IEntity): void => {
       e['pain:current'] = Math.min(e['pain:max'], e['pain:current'] + 20)
       _.EnemiesTouchingRadius(w, e.position, 8).forEach(x => {
-        _.DealDamage(s, x, {
+        _.DealDamage(w, s, x, {
           source: s,
           target: x,
           type: 'FIRE',
@@ -391,7 +397,7 @@ const immolationAura: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
     (w: IWorld, e: IEntity) => {
       e['pain:current'] = Math.min(e['pain:max'], e['pain:current'] + 80)
       _.EnemiesTouchingRadius(w, e.position, 8).forEach(x => {
-        _.DealDamage(e, x, {
+        _.DealDamage(w, e, x, {
           source: e,
           target: x,
           type: 'FIRE',
@@ -411,12 +417,13 @@ const soulCarverTicker: ITickerTemplate = {
   duration: 3,
   durationIsHasted: false,
   attributes: {},
+  sourcedAttributes: {},
   onApply: [],
   onDrop: [],
   onInterval: [
     (w: IWorld, s: IEntity, e: IEntity): void => {
       spawnFragment(w, s, false)
-      _.DealDamage(s, e, {
+      _.DealDamage(w, s, e, {
         source: s,
         target: e,
         type: 'FIRE',
@@ -434,7 +441,7 @@ const soulCarver: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   onCast: [
     (w: IWorld, e: IEntity, t: IEntity) => {
       spawnFragment(w, e, false)
-      _.DealDamage(e, t, {
+      _.DealDamage(w, e, t, {
         source: e,
         target: t,
         type: 'FIRE',
@@ -442,7 +449,7 @@ const soulCarver: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
         ability: soulCarver
       })
       spawnFragment(w, e, false)
-      _.DealDamage(e, t, {
+      _.DealDamage(w, e, t, {
         source: e,
         target: t,
         type: 'FIRE',
@@ -460,6 +467,7 @@ const empowerWardsMod: IModifierTemplate = {
   attributes: {
     '*dr:magical': 0.7
   },
+  sourcedAttributes: undefined,
   duration: 6,
   durationIsHasted: false
 }
@@ -697,10 +705,7 @@ const DefaultVengeance = function() {
     ['fragment:count']: 0,
     ['*vengeance:damage']: 0.95,
     ['+shear:damage']: 0.12,
-    ['*damage']: 1,
-    ['damage']: function(e) {
-      return e['*damage'] * (1 + e['vers:damage-done'])
-    },
+
     ['artifact:defensive-spikes:amount']: 0.1,
     ['artifact:defensive-spikes:duration']: 0.1,
     ['mastery:rating:conversion:demon-spikes']: 0.75,

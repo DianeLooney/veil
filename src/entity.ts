@@ -25,13 +25,6 @@ interface IItemFunc {
 interface IDelayFunc {
   (w: IWorld, e: IEntity): void
 }
-interface DamageEvent {
-  source: IEntity
-  target: IEntity
-  type: string
-  amount: number
-  weaponAmount: number
-}
 interface IHookFunc {
   (x: any): void
 }
@@ -50,6 +43,7 @@ interface IVector {
   dy: number
 }
 interface IEntity {
+  key: symbol
   id: number
   slug: string
   name: string
@@ -78,6 +72,9 @@ interface IEntity {
     mainHand: IItem
     offHand: IItem
   }
+  hookDamageTakenPre: { (w: IWorld, src: IEntity, tar: IEntity, args: any): void }[]
+  hookDamageTaken: { (w: IWorld, src: IEntity, tar: IEntity, args: any): void }[]
+  hookDamageTakenPost: { (w: IWorld, src: IEntity, tar: IEntity, args: any): void }[]
   _attributes: any
   rng: { [key: string]: any }
   abilities: { [key: string]: IAbilityInstance }
@@ -100,6 +97,7 @@ export { IEntity }
 
 const DefaultEntity = function(): IEntity {
   return {
+    key: Symbol('Default Entity'),
     id: 0,
     slug: '',
     name: '',
@@ -132,6 +130,9 @@ const DefaultEntity = function(): IEntity {
       mainHand: undefined,
       offHand: undefined
     },
+    hookDamageTakenPre: [],
+    hookDamageTaken: [],
+    hookDamageTakenPost: [],
     modifiers: [],
     tickers: [],
     mods: [],
@@ -149,6 +150,7 @@ const DefaultEntity = function(): IEntity {
 
 const DefaultBossEntity = function(): IEntity {
   return {
+    key: Symbol('Default Boss Entity'),
     id: 0,
     slug: '',
     name: '',
@@ -185,6 +187,10 @@ const DefaultBossEntity = function(): IEntity {
     tickers: [],
     mods: [],
     passives: [],
+
+    hookDamageTakenPre: [],
+    hookDamageTaken: [],
+    hookDamageTakenPost: [],
 
     onInit: [],
     onSpawn: [],

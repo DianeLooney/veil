@@ -20,6 +20,7 @@ interface IModifierTemplate {
   duration: number
   durationIsHasted: boolean
   attributes: { [key: string]: number }
+  sourcedAttributes: { [key: string]: number }
 }
 export { IModifierTemplate }
 interface IModifierInstance {
@@ -36,6 +37,7 @@ interface ITickerTemplate {
   duration: number
   durationIsHasted: boolean
   attributes: { [key: string]: number }
+  sourcedAttributes: { [key: string]: number }
   onApply: IApplyFunc[]
   onDrop: IDropFunc[]
   onInterval: ITickFunc[]

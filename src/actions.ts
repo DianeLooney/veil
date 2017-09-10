@@ -11,6 +11,7 @@ const debug = _debug('actions')
 const verbose = _debug('actions:verbose')
 
 const SpawnEntity = (w: IWorld, e: IEntity): void => {
+  e.key = Symbol(`[Entity:${e.slug}]`)
   w.entities.push(e)
   e.health = e['maxHealth']
   e.onSpawn.forEach(h => h(w, e))
@@ -323,7 +324,7 @@ const CastFreeAbilityByTemplate = (w: IWorld, e: IEntity, tmpl: IAbilityTemplate
   }
 }
 export { CastFreeAbilityByTemplate }
-const DealDamage = (e: IEntity, t: IEntity, args: any): void => {
+const DealDamage = (w: IWorld, e: IEntity, t: IEntity, args: any): void => {
   //start('deal-damage:first-half')
   let a: number = 0
   switch (args.type) {
@@ -377,6 +378,7 @@ const DealDamage = (e: IEntity, t: IEntity, args: any): void => {
   //end('deal-damage:third-half')
   args.amount = Math.round(args.amount)
 
+  t.hookDamageTakenPost.forEach(h => h(w, e, t, args))
   if (t.health > args.amount) {
     t.health -= args.amount
     ////debug(`damage done:\t${args.source.slug}\t${args.target.slug}\t${args.amount}\t${args.ability.slug}`)
@@ -453,19 +455,6 @@ const UnteachPassive = (w: IWorld, e: IEntity, p: IPassiveTemplate) => {
   e.passives.splice(i, 1)
 }
 export { UnteachPassive }
-const ApplyModifier = (w: IWorld, e: IEntity, m: IModifier): void => {
-  e.modifiers.push(m)
-  m.apply(w, e)
-  report('MODIFIER_GAINED', { entity: e, modifier: m })
-}
-export { ApplyModifier }
-const UnapplyModifier = (e: IEntity, m: IModifier): void => {
-  let i = e.modifiers.indexOf(m)
-  e.modifiers.splice(i)
-  report('MODIFIER_DROPPED', { entity: e, modifier: m })
-}
-export { UnapplyModifier }
-
 const ApplyMod = (w: IWorld, src: IEntity, tar: IEntity, m: IModifierTemplate): void => {
   let x: IModifierInstance = {
     template: m,
@@ -478,13 +467,12 @@ const ApplyMod = (w: IWorld, src: IEntity, tar: IEntity, m: IModifierTemplate): 
       {
         let matching = tar.mods.filter(y => y.template.id == x.template.id && y.source == x.source)
         matching.forEach(z => {
-          for (let a in z.template.attributes) {
-            LoseAttribute(tar, a, z.template.attributes[a])
-          }
+          _dropModifierAttrs(w, z.source, tar, z.template)
         })
         if (matching.length > 0) {
           tar.mods = tar.mods.filter(y => !(y.template.id == x.template.id && y.source == x.source))
         }
+        _applyModifierAttrs(w, src, tar, m)
         tar.mods.push(x)
       }
       break
@@ -503,15 +491,59 @@ const ApplyMod = (w: IWorld, src: IEntity, tar: IEntity, m: IModifierTemplate): 
     case 'DISJOINT':
       x.expires += m.duration * (m.durationIsHasted ? 1 / (1 + src['haste']) : 1) * w._second
       tar.mods.push(x)
-      for (let a in m.attributes) {
-        GainAttribute(tar, a, m.attributes[a])
-      }
+      _applyModifierAttrs(w, src, tar, m)
       //verbose`${m.slug} was just attached`)
       break
     default:
     //debug(`Unrecognized mod stackMode: '${m.stackMode}'`)
   }
   tar.mods.sort((x, y) => x.expires - y.expires)
+}
+const _applyModifierAttrs = (w: IWorld, src: IEntity, tar: IEntity, m: IModifierTemplate): void => {
+  for (let a in m.attributes) {
+    GainAttribute(tar, a, m.attributes[a])
+  }
+  if (m.sourcedAttributes !== undefined) {
+    if (tar[src.key] === undefined) {
+      tar[src.key] = {}
+    }
+    for (let a in m.sourcedAttributes) {
+      GainAttribute(tar[src.key], a, m.sourcedAttributes[a])
+    }
+  }
+}
+const _dropModifierAttrs = (w: IWorld, src: IEntity, tar: IEntity, m: IModifierTemplate): void => {
+  for (let a in m.attributes) {
+    LoseAttribute(tar, a, m.attributes[a])
+  }
+  if (m.sourcedAttributes !== undefined) {
+    for (let a in m.sourcedAttributes) {
+      LoseAttribute(tar[src.key], a, m.sourcedAttributes[a])
+    }
+  }
+}
+const _applyTickerAttrs = (w: IWorld, src: IEntity, tar: IEntity, m: ITickerTemplate): void => {
+  for (let a in m.attributes) {
+    GainAttribute(tar, a, m.attributes[a])
+  }
+  if (m.sourcedAttributes !== undefined) {
+    if (tar[src.key] === undefined) {
+      tar[src.key] = {}
+    }
+    for (let a in m.sourcedAttributes) {
+      GainAttribute(tar[src.key], a, m.sourcedAttributes[a])
+    }
+  }
+}
+const _dropTickerAttrs = (w: IWorld, src: IEntity, tar: IEntity, m: ITickerTemplate): void => {
+  for (let a in m.attributes) {
+    LoseAttribute(tar, a, m.attributes[a])
+  }
+  if (m.sourcedAttributes !== undefined) {
+    for (let a in m.sourcedAttributes) {
+      LoseAttribute(tar[src.key], a, m.sourcedAttributes[a])
+    }
+  }
 }
 export { ApplyMod }
 const ApplyTicker = (w: IWorld, src: IEntity, tar: IEntity, t: ITickerTemplate): void => {
@@ -532,9 +564,9 @@ const ApplyTicker = (w: IWorld, src: IEntity, tar: IEntity, t: ITickerTemplate):
           }
         })
         if (matching.length > 0) {
-          tar.mods = tar.mods.filter(y => !(y.template.id == t.id && y.source == src))
+          tar.tickers = tar.tickers.filter(y => !(y.template.id == t.id && y.source == src))
         }
-        tar.mods.push(x)
+        tar.tickers.push(x)
       }
       break
     case 'EXTEND':

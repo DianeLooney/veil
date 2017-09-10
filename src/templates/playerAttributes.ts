@@ -85,7 +85,10 @@ let attributes = {
   ['vers:healing-done']: function(e) {
     return e['+vers:rating'] / e['vers:rating:conversion:hd']
   },
-
+  ['*damage']: 1,
+  ['damage']: function(e) {
+    return e['*damage'] * (1 + e['vers:damage-done'])
+  },
   ['+mastery:rating']: 0,
   ['mastery:rating:conversion:standard']: 40000,
   ['mastery:standard:base']: 0.08,
