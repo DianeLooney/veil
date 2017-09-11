@@ -41,6 +41,32 @@ interface IVector {
   dx: number
   dy: number
 }
+interface IAttributeGroup {
+  ability?: {
+    [key: string]: { [key: string]: number }
+  }
+  [key: string]: number
+}
+export { IAttributeGroup }
+interface ITalentSlot {
+  slug: string
+  row: number
+  column: number
+  enabled: boolean
+  passives: IPassiveTemplate[]
+  actives: IAbilityTemplate[]
+  attributes: IAttributeGroup
+}
+export const DefaultTalentSlot: ITalentSlot = {
+  slug: 'default-talent-slot',
+  row: -1,
+  column: -1,
+  enabled: false,
+  passives: [],
+  actives: [],
+  attributes: {}
+}
+export { ITalentSlot }
 interface IEntity {
   key: symbol
   id: number
@@ -71,6 +97,9 @@ interface IEntity {
     mainHand: IItem
     offHand: IItem
   }
+  _talents: ITalentSlot[]
+  talentsBySlug: { [key: string]: ITalentSlot }
+  talentsByRow: ITalentSlot[][]
   hookDamageTakenPre: { (w: IWorld, src: IEntity, tar: IEntity, args: any): void }[]
   hookDamageTaken: { (w: IWorld, src: IEntity, tar: IEntity, args: any): void }[]
   hookDamageTakenPost: { (w: IWorld, src: IEntity, tar: IEntity, args: any): void }[]
@@ -93,7 +122,7 @@ interface IEntity {
 }
 export { IEntity }
 
-const DefaultEntity = function (): IEntity {
+const DefaultEntity = function(): IEntity {
   return {
     key: Symbol('Entity'),
     id: 0,
@@ -135,6 +164,10 @@ const DefaultEntity = function (): IEntity {
     mods: [],
     passives: [],
 
+    _talents: [],
+    talentsBySlug: {},
+    talentsByRow: [],
+
     onInit: [],
     onSpawn: [],
     onDespawn: [],
@@ -145,7 +178,7 @@ const DefaultEntity = function (): IEntity {
   }
 }
 
-const DefaultBossEntity = function (): IEntity {
+const DefaultBossEntity = function(): IEntity {
   return {
     key: Symbol('Entity'),
     id: 0,
@@ -183,6 +216,10 @@ const DefaultBossEntity = function (): IEntity {
     tickers: [],
     mods: [],
     passives: [],
+
+    _talents: [],
+    talentsBySlug: {},
+    talentsByRow: [],
 
     hookDamageTakenPre: [],
     hookDamageTaken: [],

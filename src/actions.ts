@@ -1,6 +1,6 @@
 import { IPassiveTemplate, IAbilityTemplate, IAbilityInstance } from './ability'
 import { ITickerTemplate, IModifierTemplate, ITickerInstance, IModifierInstance } from './modifier'
-import { IEntity, IPosition, IVector } from './entity'
+import { IEntity, ITalentSlot, IPosition, IVector } from './entity'
 import { IItem } from './item'
 import { IWorld, formatTime } from './world'
 import { parse, build } from './templates/attributeParser'
@@ -92,7 +92,7 @@ const TickWorld = (w: IWorld): void => {
       if (a.currentCharges < a.template.chargeMax) {
         a.startedCharging = a.willFinishCharging
         a.willFinishCharging =
-          a.startedCharging + a.template.cooldown * (a.template.cooldownIsHasted ? 1 / (1 + e['haste']) : 1) * w._second
+          a.startedCharging + (a.template.cooldown + a['+cooldown']) * (a.template.cooldownIsHasted ? 1 / (1 + e['haste']) : 1) * w._second
       } else {
         e.rechargingAbilities.splice(0, 1)
       }
@@ -178,6 +178,20 @@ const InitEntity = (w: IWorld, e: IEntity, c?: any): void => {
   } else {
     LoadDefaultAttributes(e)
   }
+  e.talentsByRow = [
+    [undefined, undefined, undefined],
+    [undefined, undefined, undefined],
+    [undefined, undefined, undefined],
+    [undefined, undefined, undefined],
+    [undefined, undefined, undefined],
+    [undefined, undefined, undefined],
+    [undefined, undefined, undefined]
+  ]
+  e.talentsBySlug = {}
+  e._talents.forEach(t => {
+    e.talentsByRow[t.row][t.column] = t
+    e.talentsBySlug[t.slug] = t
+  })
 
   e.onInit.forEach(h => h(w, e))
 }
@@ -217,7 +231,20 @@ const EquipItem = (w: IWorld, e: IEntity, slot: string, i: IItem): void => {
   }
   e.items[slot] = i
   for (var stat in i.stats) {
-    GainAttribute(e, stat, i.stats[stat])
+    if (stat === 'ability') {
+      let y = i.stats[stat]
+      for (var ability in i.stats[stat]) {
+        let x = e.abilities[ability]
+        if (x === undefined) {
+          continue
+        }
+        for (var s in i.stats[stat][ability]) {
+          GainAttribute(x, s, i.stats[stat][ability][s])
+        }
+      }
+    } else {
+      GainAttribute(e, stat, i.stats[stat])
+    }
   }
   e.onEquipItem.forEach(h => h(w, e, i, slot))
   //TODO: dispatch Item equipped event
@@ -229,8 +256,21 @@ const UnequipItem = (w: IWorld, e: IEntity, slot: string): void => {
     return
   }
   let i = e.items[slot]
-  for (var a in i.stats) {
-    LoseAttribute(e, a, i.stats[a])
+  for (var stat in i.stats) {
+    if (stat === 'ability') {
+      let y = i.stats[stat]
+      for (var ability in i.stats[stat]) {
+        let x = e.abilities[ability]
+        if (x === undefined) {
+          continue
+        }
+        for (var s in i.stats[stat][ability]) {
+          LoseAttribute(x, s, i.stats[stat][ability][s])
+        }
+      }
+    } else {
+      LoseAttribute(e, stat, i.stats[stat])
+    }
   }
   e.items[slot] = undefined
   e.onUnequipItem.forEach(h => h(w, e, i, slot))
@@ -255,7 +295,7 @@ const CastAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...t
   }
   ////end('onGCD')
   ////start('cooldown')
-  if (a.cooldown > 0 && i.currentCharges < 1) {
+  if (a.cooldown + i['+cooldown'] > 0 && i.currentCharges < 1) {
     //end('cooldown')
     return false
   }
@@ -278,9 +318,9 @@ const CastAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...t
   //end('costs')
   i.currentCharges = i.currentCharges - 1
   //start('a.cooldown')
-  if (a.cooldown > 0) {
+  if (a.cooldown + i['+cooldown'] > 0) {
     i.startedCharging = w.now
-    i.willFinishCharging = w.now + a.cooldown * (a.cooldownIsHasted ? 1 / (1 + e['haste']) : 1) * w._second
+    i.willFinishCharging = w.now + (a.cooldown + i['+cooldown']) * (a.cooldownIsHasted ? 1 / (1 + e['haste']) : 1) * w._second
     if (!e.rechargingAbilities.includes(i)) {
       e.rechargingAbilities.push(i)
     }
@@ -421,7 +461,8 @@ const TeachAbility = (w: IWorld, e: IEntity, a: IAbilityTemplate): void => {
     template: a,
     currentCharges: a.chargeMax,
     startedCharging: -1,
-    willFinishCharging: -1
+    willFinishCharging: -1,
+    ['+cooldown']: 0
   }
   e.restingAbilities.push(x)
   e.abilities[a.slug] = x
@@ -505,6 +546,22 @@ const _applyModifierAttrs = (w: IWorld, src: IEntity, tar: IEntity, m: IModifier
   for (let a in m.attributes) {
     GainAttribute(tar, a, m.attributes[a])
   }
+  for (let attr in m.attributes) {
+    if (attr === 'ability') {
+      let y = m.attributes[attr]
+      for (var ability in m.attributes[attr]) {
+        let x = tar.abilities[ability]
+        if (x === undefined) {
+          continue
+        }
+        for (var s in m.attributes[attr][ability]) {
+          GainAttribute(x, s, m.attributes[attr][ability][s])
+        }
+      }
+    } else {
+      GainAttribute(tar, attr, m.attributes[attr])
+    }
+  }
   if (m.sourcedAttributes !== undefined) {
     if (tar[src.key] === undefined) {
       tar[src.key] = {}
@@ -515,8 +572,21 @@ const _applyModifierAttrs = (w: IWorld, src: IEntity, tar: IEntity, m: IModifier
   }
 }
 const _dropModifierAttrs = (w: IWorld, src: IEntity, tar: IEntity, m: IModifierTemplate): void => {
-  for (let a in m.attributes) {
-    LoseAttribute(tar, a, m.attributes[a])
+  for (let attr in m.attributes) {
+    if (attr === 'ability') {
+      let y = m.attributes[attr]
+      for (var ability in m.attributes[attr]) {
+        let x = tar.abilities[ability]
+        if (x === undefined) {
+          continue
+        }
+        for (var s in m.attributes[attr][ability]) {
+          LoseAttribute(x, s, m.attributes[attr][ability][s])
+        }
+      }
+    } else {
+      LoseAttribute(tar, attr, m.attributes[attr])
+    }
   }
   if (m.sourcedAttributes !== undefined) {
     for (let a in m.sourcedAttributes) {
@@ -527,6 +597,22 @@ const _dropModifierAttrs = (w: IWorld, src: IEntity, tar: IEntity, m: IModifierT
 const _applyTickerAttrs = (w: IWorld, src: IEntity, tar: IEntity, m: ITickerTemplate): void => {
   for (let a in m.attributes) {
     GainAttribute(tar, a, m.attributes[a])
+  }
+  for (let attr in m.attributes) {
+    if (attr === 'ability') {
+      let y = m.attributes[attr]
+      for (var ability in m.attributes[attr]) {
+        let x = tar.abilities[ability]
+        if (x === undefined) {
+          continue
+        }
+        for (var s in m.attributes[attr][ability]) {
+          GainAttribute(x, s, m.attributes[attr][ability][s])
+        }
+      }
+    } else {
+      GainAttribute(tar, attr, m.attributes[attr])
+    }
   }
   if (m.sourcedAttributes !== undefined) {
     if (tar[src.key] === undefined) {
@@ -540,6 +626,22 @@ const _applyTickerAttrs = (w: IWorld, src: IEntity, tar: IEntity, m: ITickerTemp
 const _dropTickerAttrs = (w: IWorld, src: IEntity, tar: IEntity, m: ITickerTemplate): void => {
   for (let a in m.attributes) {
     LoseAttribute(tar, a, m.attributes[a])
+  }
+  for (let attr in m.attributes) {
+    if (attr === 'ability') {
+      let y = m.attributes[attr]
+      for (var ability in m.attributes[attr]) {
+        let x = tar.abilities[ability]
+        if (x === undefined) {
+          continue
+        }
+        for (var s in m.attributes[attr][ability]) {
+          LoseAttribute(x, s, m.attributes[attr][ability][s])
+        }
+      }
+    } else {
+      LoseAttribute(tar, attr, m.attributes[attr])
+    }
   }
   if (m.sourcedAttributes !== undefined) {
     for (let a in m.sourcedAttributes) {
@@ -640,3 +742,52 @@ const UnitVector = (v: IVector): IVector => {
   return { dx: v.dx / d, dy: v.dy / d }
 }
 export { UnitVector }
+const SelectTalent = (w: IWorld, e: IEntity, t: ITalentSlot): void => {
+  if (e._talents.filter(x => x === t).length === 0) {
+    console.error(`Unable to select the talent ${t.slug} as it isn't taught to ${e.slug}`)
+    return
+  }
+  t.actives.forEach(a => TeachAbility(w, e, a))
+  t.passives.forEach(p => TeachPassive(w, e, p))
+  for (let attr in t.attributes) {
+    if (attr === 'ability') {
+      let y = t.attributes[attr]
+      for (var ability in t.attributes[attr]) {
+        let x = e.abilities[ability]
+        if (x === undefined) {
+          continue
+        }
+        for (var s in t.attributes[attr][ability]) {
+          GainAttribute(x, s, t.attributes[attr][ability][s])
+        }
+      }
+    } else {
+      GainAttribute(e, attr, t.attributes[attr])
+    }
+  }
+  t.enabled = true
+  //TODO: Log this somewhere
+}
+export { SelectTalent }
+const UnselectTalent = (w: IWorld, e: IEntity, t: ITalentSlot): void => {
+  //t.actives.forEach(a => UnteachAbility(w, e, a)) //TODO: Fix this eventually
+  t.passives.forEach(p => UnteachPassive(w, e, p))
+  for (let attr in t.attributes) {
+    if (attr === 'ability') {
+      let y = t.attributes[attr]
+      for (var ability in t.attributes[attr]) {
+        let x = e.abilities[ability]
+        if (x === undefined) {
+          continue
+        }
+        for (var s in t.attributes[attr][ability]) {
+          LoseAttribute(x, s, t.attributes[attr][ability][s])
+        }
+      }
+    } else {
+      LoseAttribute(e, attr, t.attributes[attr])
+    }
+  }
+  t.enabled = false
+}
+export { UnselectTalent }

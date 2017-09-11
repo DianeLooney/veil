@@ -2,7 +2,7 @@ import { IEntity, DefaultEntity, DefaultBossEntity } from './entity'
 import * as _ from './actions'
 import { IWorld, DefaultWorld } from './world.js'
 import { IAbilityTemplate, IPassiveTemplate } from './ability.js'
-import { } from './modifier'
+import {} from './modifier'
 import dhVengeance from './templates/dh/vengeance'
 import newSavedya from './templates/dh/savedya'
 import savedya_gg from './templates/dh/savedya_greenglaives'
@@ -13,9 +13,9 @@ import * as microtime from 'microtime'
 var now = require('performance-now')
 import { start, end, dump } from './perf'
 
-let perfMode = process.env.VEIL_MODE === "PERF"
+let perfMode = process.env.VEIL_MODE === 'PERF'
 if (perfMode) {
-  debug("Started in Perf mode.")
+  debug('Started in Perf mode.')
   let total = 0
   let runs = 100
   let playerAttrs = _.BuildDefaultAttributesCache(newSavedya())
@@ -108,7 +108,7 @@ if (perfMode) {
   console.log('Average time:', total / runs)
   dump()
 } else {
-  debug("Started in Live mode.")
+  debug('Started in Live mode.')
   let playerAttrs = _.BuildDefaultAttributesCache(newSavedya())
   let bossAttrs = _.BuildDefaultAttributesCache(DefaultBossEntity())
   const w = DefaultWorld() as IWorld
@@ -117,9 +117,13 @@ if (perfMode) {
   idiot.slug = 'idiot'
   _.InitEntity(w, e, playerAttrs)
   _.InitEntity(w, idiot, bossAttrs)
+  _.SelectTalent(w, e, e._talents[0])
   _.SpawnEntity(w, e)
   _.SpawnEntity(w, idiot)
   let first = true
+
+  //console.log(e.abilities['infernal-strike'].template['+cooldown'])
+
   setInterval(() => {
     //start('tick')
     _.TickWorld(w)
@@ -188,8 +192,7 @@ if (perfMode) {
       }
     }
   }, 40)
+
   //debug('This time:', endTime - startTime)
   //dump()
-
-
 }

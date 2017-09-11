@@ -1,8 +1,10 @@
+import { IAttributeGroup } from './entity'
+
 interface IItem {
   id: number
   slug: string
   slot: string
-  stats: { [key: string]: number }
+  stats: IAttributeGroup
   artifactId: number
   artifactTraits: { id: number; rank: number }[]
 }

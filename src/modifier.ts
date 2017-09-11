@@ -1,4 +1,4 @@
-import { IEntity } from './Entity'
+import { IEntity, IAttributeGroup } from './Entity'
 import { IWorld } from './World'
 import * as _debug from 'debug'
 const debug = _debug('modifier')
@@ -19,7 +19,7 @@ interface IModifierTemplate {
   stackMode: string
   duration: number
   durationIsHasted: boolean
-  attributes: { [key: string]: number }
+  attributes: IAttributeGroup
   sourcedAttributes: { [key: string]: number }
 }
 export { IModifierTemplate }
@@ -36,7 +36,7 @@ interface ITickerTemplate {
   stackMode: string
   duration: number
   durationIsHasted: boolean
-  attributes: { [key: string]: number }
+  attributes: IAttributeGroup
   sourcedAttributes: { [key: string]: number }
   onApply: IApplyFunc[]
   onDrop: IDropFunc[]
@@ -52,4 +52,4 @@ interface ITickerInstance {
   expires: number
   nextTick: number
 }
-export { ITickerInstance } 
+export { ITickerInstance }

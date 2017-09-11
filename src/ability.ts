@@ -61,5 +61,6 @@ interface IAbilityInstance {
   currentCharges: number
   startedCharging: number
   willFinishCharging: number
+  '+cooldown': number
 }
 export { IAbilityInstance }

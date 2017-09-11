@@ -8,6 +8,9 @@ import { sequence, rppm } from '../../rng'
 import report from '../../report'
 import * as _debug from 'debug'
 import { start, end } from '../../perf'
+
+import * as talents from './vengeance-talents'
+
 const debug = _debug('vengeance')
 const verbose = _debug('verbose:vengeance')
 
@@ -23,7 +26,7 @@ const infernalStrike: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   id: 189110,
   slug: 'infernal-strike',
 
-  cooldown: 12,
+  cooldown: 20,
   chargeMax: 2,
   cooldownIsHasted: true,
 
@@ -744,6 +747,10 @@ const DefaultVengeance = function() {
       return e['mastery:standard'] * e['mastery:rating:conversion:demon-spikes']
     }
   })
+  x._talents = []
+  for (let k in talents) {
+    x._talents.push(talents[k])
+  }
   return x as IEntity
 }
 
