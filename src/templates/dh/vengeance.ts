@@ -95,7 +95,7 @@ const metamorphosis: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
     }
   ]
 })
-const spawnFragment = function (w: IWorld, e: IEntity, greater: boolean): void {
+const spawnFragment = function(w: IWorld, e: IEntity, greater: boolean): void {
   debug('spawning a soul-fragment')
 
   _.Delayed(w, e, {
@@ -112,7 +112,7 @@ const spawnFragment = function (w: IWorld, e: IEntity, greater: boolean): void {
     }
   })
 }
-const consumeFragment = function (w: IWorld, e: IEntity, count: number): void {
+const consumeFragment = function(w: IWorld, e: IEntity, count: number): void {
   while (count > 0) {
     debug(`\t${formatTime(w.now)}\t${e.slug} consumes a soul-fragment`)
     count--
@@ -322,7 +322,38 @@ const sigilOfFlame: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
     }
   ]
 })
-
+const fieryBrandTicker: ITickerTemplate = {
+  id: 204021,
+  slug: 'fiery-brand',
+  stackMode: 'OVERWRITE',
+  duration: 10,
+  durationIsHasted: false,
+  attributes: {},
+  sourcedAttributes: { '*target:damage': 0.6 },
+  onApply: [],
+  onDrop: [],
+  onInterval: [(w: IWorld, s: IEntity, e: IEntity): void => {}],
+  interval: 1,
+  intervalIsHasted: false
+}
+const fieryBrand: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
+  id: 204021,
+  slug: 'fiery-brand',
+  cooldown: 60,
+  cooldownIsHasted: false,
+  onCast: [
+    (w: IWorld, e: IEntity, t: IEntity) => {
+      _.DealDamage(w, e, t, {
+        source: e,
+        target: t,
+        type: 'FIRE',
+        attackPower: 8.13 * e['*vengeance:damage'] * e['damage'],
+        ability: fieryBrand
+      })
+      _.ApplyTicker(w, e, t, fieryBrandTicker)
+    }
+  ]
+})
 const demonSpikesMod: IModifierTemplate = {
   id: 203819,
   slug: 'demon-spikes',
@@ -335,7 +366,7 @@ const demonSpikesMod: IModifierTemplate = {
 const defensiveSpikesMod: IModifierTemplate = {
   id: 212871,
   slug: 'defensive-spikes',
-  stackMode: 'EXTEND',
+  stackMode: 'OVERWRITE',
   duration: 3,
   durationIsHasted: false,
   attributes: { '+parry': 0.1 },
@@ -463,7 +494,7 @@ const soulCarver: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
 const empowerWardsMod: IModifierTemplate = {
   id: 218256,
   slug: 'empower-wards',
-  stackMode: 'DISJOINT',
+  stackMode: 'EXTEND',
   attributes: {
     '*dr:magical': 0.7
   },
@@ -627,10 +658,10 @@ const enchantsPassive: IPassiveTemplate = {
     '+crit:rating': 400
   }
 }
-const DefaultVengeance = function () {
+const DefaultVengeance = function() {
   let x = Object.assign(DefaultEntity(), {
     onInit: [
-      function (w: IWorld, e: IEntity) {
+      function(w: IWorld, e: IEntity) {
         _.TeachAbility(w, e, shear)
         _.TeachAbility(w, e, fracture)
         _.TeachAbility(w, e, spiritBomb)
@@ -639,7 +670,7 @@ const DefaultVengeance = function () {
         _.TeachAbility(w, e, infernalStrike)
         _.TeachAbility(w, e, metamorphosis)
         //_.TeachAbility(w, e, soulCleave)
-        //_.TeachAbility(w, e, fieryBrandSpell)
+        _.TeachAbility(w, e, fieryBrand)
         _.TeachAbility(w, e, sigilOfFlame)
         _.TeachAbility(w, e, empowerWards)
         _.TeachAbility(w, e, soulCarver)
@@ -692,13 +723,13 @@ const DefaultVengeance = function () {
         }
       }
     ],
-    onSpawn: [(w: IWorld, e: IEntity) => { }]
+    onSpawn: [(w: IWorld, e: IEntity) => {}]
   })
   x._attributes = Object.assign(x._attributes, {
     ['pain:max:base']: 1000,
     ['+pain:max']: 0,
     ['pain:current']: 0,
-    ['pain:max']: function (e) {
+    ['pain:max']: function(e) {
       return e['pain:max:base'] + e['+pain:max']
     },
     ['fragment:expiration:time']: [],
@@ -709,7 +740,7 @@ const DefaultVengeance = function () {
     ['artifact:defensive-spikes:amount']: 0.1,
     ['artifact:defensive-spikes:duration']: 0.1,
     ['mastery:rating:conversion:demon-spikes']: 0.75,
-    ['mastery:demon-spikes']: function (e) {
+    ['mastery:demon-spikes']: function(e) {
       return e['mastery:standard'] * e['mastery:rating:conversion:demon-spikes']
     }
   })

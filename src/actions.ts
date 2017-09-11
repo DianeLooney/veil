@@ -8,11 +8,17 @@ import report from './report'
 import { start, end } from './perf'
 import * as _debug from 'debug'
 let debug
-if (process.env.VEIL_MODE !== "PERF") { debug = _debug('actions') }
-else { debug = function () { } }
+if (process.env.VEIL_MODE !== 'PERF') {
+  debug = _debug('actions')
+} else {
+  debug = function() {}
+}
 let verbose
-if (process.env.VEIL_MODE !== "PERF") { verbose = _debug('actions:verbose') }
-else { verbose = function () { } }
+if (process.env.VEIL_MODE !== 'PERF') {
+  verbose = _debug('actions:verbose')
+} else {
+  verbose = function() {}
+}
 const SpawnEntity = (w: IWorld, e: IEntity): void => {
   e.key = Symbol(`[Entity:${e.slug}]`)
   w.entities.push(e)
@@ -100,12 +106,12 @@ const TickWorld = (w: IWorld): void => {
   report('WORLD_TICKED', { time: w.now / w._second })
 }
 export { TickWorld }
-const Delayed = function (w: IWorld, e: IEntity, f: any) {
+const Delayed = function(w: IWorld, e: IEntity, f: any) {
   e.delays.push(f)
   e.delays.sort((x, y) => x.when - y.when)
 }
 export { Delayed }
-const LoadDefaultAttributes = function (e: IEntity) {
+const LoadDefaultAttributes = function(e: IEntity) {
   let d = build(parse(e._attributes))
   for (let i in d) {
     let k = i
@@ -114,7 +120,7 @@ const LoadDefaultAttributes = function (e: IEntity) {
       case 'function':
         delete e[k]
         Object.defineProperty(e, k, {
-          get: function () {
+          get: function() {
             ////start(`attr[${k}]`)
             if (e[`__${k}__`] === undefined) {
               e[`__${k}__`] = r.value(e)
@@ -122,7 +128,7 @@ const LoadDefaultAttributes = function (e: IEntity) {
             ////end(`attr[${k}]`)
             return e[`__${k}__`]
           },
-          set: function (v) {
+          set: function(v) {
             console.error(`Unable to set attribute ${k} of ${e.slug}`)
           }
         })
@@ -134,11 +140,11 @@ const LoadDefaultAttributes = function (e: IEntity) {
   }
 }
 export { LoadDefaultAttributes }
-const BuildDefaultAttributesCache = function (e: IEntity) {
+const BuildDefaultAttributesCache = function(e: IEntity) {
   return build(parse(e._attributes))
 }
 export { BuildDefaultAttributesCache }
-const AttachAttributesCache = function (e: IEntity, d: any) {
+const AttachAttributesCache = function(e: IEntity, d: any) {
   for (let i in d) {
     let k = i
     let r = d[k]
@@ -146,7 +152,7 @@ const AttachAttributesCache = function (e: IEntity, d: any) {
       case 'function':
         delete e[k]
         Object.defineProperty(e, k, {
-          get: function () {
+          get: function() {
             ////start(`attr[${k}]`)
             if (e[`__${k}__`] === undefined) {
               e[`__${k}__`] = r.value(e)
@@ -154,7 +160,7 @@ const AttachAttributesCache = function (e: IEntity, d: any) {
             ////end(`attr[${k}]`)
             return e[`__${k}__`]
           },
-          set: function (v) {
+          set: function(v) {
             console.error(`Unable to set attribute ${k} of ${e.slug}`)
           }
         })
@@ -345,9 +351,17 @@ const DealDamage = (w: IWorld, e: IEntity, t: IEntity, args: any): void => {
   }
   //end('deal-damage:first-half')
   //start('deal-damage:second-half')
+
   args.amount = a
+  if (t[e.key] !== undefined && t[e.key]['*target:damage'] !== undefined) {
+    args.amount *= t[e.key]['*target:damage']
+  }
   if (!args.critDisabled) {
-    if (Math.random() <= args.source['crit']) {
+    let critChance = args.source['crit']
+    if (t[e.key] !== undefined && t[e.key]['+crit'] !== undefined) {
+      critChance += t[e.key]['+crit']
+    }
+    if (Math.random() <= critChance) {
       args.amount *= 2
       args.didCrit = true
       //verbose'spell did crit')
