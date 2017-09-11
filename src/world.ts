@@ -1,4 +1,3 @@
-import { IModifier } from './modifier'
 import { IEntity } from './entity'
 import { IItem } from './item'
 import report from './report'
@@ -15,7 +14,7 @@ interface IWorld {
   slug: string
 }
 
-const formatTime = function(n: number): string {
+const formatTime = function (n: number): string {
   let x = Math.floor(n / 1000)
   let millis = '' + (n - x * 1000)
   while (millis.length < 3) {
@@ -36,7 +35,7 @@ const formatTime = function(n: number): string {
 export { formatTime }
 
 export { IWorld }
-const DefaultWorld = function(): IWorld {
+const DefaultWorld = function (): IWorld {
   return {
     _second: 1000,
     _tickDelta: 40,

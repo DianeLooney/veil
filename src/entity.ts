@@ -1,7 +1,6 @@
 import report from './report'
 import { IAbilityTemplate, IPassiveTemplate, IAbilityInstance } from './ability'
 import { IWorld } from './world'
-import { IModifier } from './modifier'
 import { IItem } from './item'
 import { ITickerTemplate, ITickerInstance, IModifierTemplate, IModifierInstance } from './modifier'
 import consts from './consts'
@@ -80,7 +79,6 @@ interface IEntity {
   abilities: { [key: string]: IAbilityInstance }
   rechargingAbilities: IAbilityInstance[]
   restingAbilities: IAbilityInstance[]
-  modifiers: IModifier[]
   tickers: ITickerInstance[]
   mods: IModifierInstance[]
   passives: IPassiveTemplate[]
@@ -95,9 +93,9 @@ interface IEntity {
 }
 export { IEntity }
 
-const DefaultEntity = function(): IEntity {
+const DefaultEntity = function (): IEntity {
   return {
-    key: Symbol('Default Entity'),
+    key: Symbol('Entity'),
     id: 0,
     slug: '',
     name: '',
@@ -133,7 +131,6 @@ const DefaultEntity = function(): IEntity {
     hookDamageTakenPre: [],
     hookDamageTaken: [],
     hookDamageTakenPost: [],
-    modifiers: [],
     tickers: [],
     mods: [],
     passives: [],
@@ -148,9 +145,9 @@ const DefaultEntity = function(): IEntity {
   }
 }
 
-const DefaultBossEntity = function(): IEntity {
+const DefaultBossEntity = function (): IEntity {
   return {
-    key: Symbol('Default Boss Entity'),
+    key: Symbol('Entity'),
     id: 0,
     slug: '',
     name: '',
@@ -183,7 +180,6 @@ const DefaultBossEntity = function(): IEntity {
       mainHand: undefined,
       offHand: undefined
     },
-    modifiers: [],
     tickers: [],
     mods: [],
     passives: [],

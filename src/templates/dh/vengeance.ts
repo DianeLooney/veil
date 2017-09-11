@@ -3,7 +3,7 @@ import { IItem } from '../../item'
 import { IWorld, formatTime } from '../../world'
 import * as _ from '../../actions'
 import { IAbilityTemplate, AbilityDefaults, IPassiveTemplate } from '../../Ability'
-import { DefaultModifier, IModifier, IModifierTemplate, ITickerTemplate } from '../../Modifier'
+import { IModifierTemplate, ITickerTemplate } from '../../Modifier'
 import { sequence, rppm } from '../../rng'
 import report from '../../report'
 import * as _debug from 'debug'
@@ -95,7 +95,7 @@ const metamorphosis: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
     }
   ]
 })
-const spawnFragment = function(w: IWorld, e: IEntity, greater: boolean): void {
+const spawnFragment = function (w: IWorld, e: IEntity, greater: boolean): void {
   debug('spawning a soul-fragment')
 
   _.Delayed(w, e, {
@@ -112,7 +112,7 @@ const spawnFragment = function(w: IWorld, e: IEntity, greater: boolean): void {
     }
   })
 }
-const consumeFragment = function(w: IWorld, e: IEntity, count: number): void {
+const consumeFragment = function (w: IWorld, e: IEntity, count: number): void {
   while (count > 0) {
     debug(`\t${formatTime(w.now)}\t${e.slug} consumes a soul-fragment`)
     count--
@@ -627,10 +627,10 @@ const enchantsPassive: IPassiveTemplate = {
     '+crit:rating': 400
   }
 }
-const DefaultVengeance = function() {
+const DefaultVengeance = function () {
   let x = Object.assign(DefaultEntity(), {
     onInit: [
-      function(w: IWorld, e: IEntity) {
+      function (w: IWorld, e: IEntity) {
         _.TeachAbility(w, e, shear)
         _.TeachAbility(w, e, fracture)
         _.TeachAbility(w, e, spiritBomb)
@@ -692,13 +692,13 @@ const DefaultVengeance = function() {
         }
       }
     ],
-    onSpawn: [(w: IWorld, e: IEntity) => {}]
+    onSpawn: [(w: IWorld, e: IEntity) => { }]
   })
   x._attributes = Object.assign(x._attributes, {
     ['pain:max:base']: 1000,
     ['+pain:max']: 0,
     ['pain:current']: 0,
-    ['pain:max']: function(e) {
+    ['pain:max']: function (e) {
       return e['pain:max:base'] + e['+pain:max']
     },
     ['fragment:expiration:time']: [],
@@ -709,7 +709,7 @@ const DefaultVengeance = function() {
     ['artifact:defensive-spikes:amount']: 0.1,
     ['artifact:defensive-spikes:duration']: 0.1,
     ['mastery:rating:conversion:demon-spikes']: 0.75,
-    ['mastery:demon-spikes']: function(e) {
+    ['mastery:demon-spikes']: function (e) {
       return e['mastery:standard'] * e['mastery:rating:conversion:demon-spikes']
     }
   })
