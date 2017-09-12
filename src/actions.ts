@@ -92,7 +92,8 @@ const TickWorld = (w: IWorld): void => {
       if (a.currentCharges < a.template.chargeMax) {
         a.startedCharging = a.willFinishCharging
         a.willFinishCharging =
-          a.startedCharging + (a.template.cooldown + a['+cooldown']) * (a.template.cooldownIsHasted ? 1 / (1 + e['haste']) : 1) * w._second
+          a.startedCharging +
+          (a.template.cooldown + a.attributes['+cooldown']) * (a.template.cooldownIsHasted ? 1 / (1 + e['haste']) : 1) * w._second
       } else {
         e.rechargingAbilities.splice(0, 1)
       }
@@ -295,7 +296,7 @@ const CastAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...t
   }
   ////end('onGCD')
   ////start('cooldown')
-  if (a.cooldown + i['+cooldown'] > 0 && i.currentCharges < 1) {
+  if (a.cooldown + i.attributes['+cooldown'] > 0 && i.currentCharges < 1) {
     //end('cooldown')
     return false
   }
@@ -314,13 +315,19 @@ const CastAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...t
       return false
     }
   }
+  CastFreeAbilityByReference(w, e, i, ...targets)
+  return true
+}
+export { CastAbilityByReference }
+const CastFreeAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...targets: IEntity[]): boolean => {
+  let a = i.template
   debug(`\t${formatTime(w.now)}\t${e.slug} casts ${a.slug}`)
   //end('costs')
   i.currentCharges = i.currentCharges - 1
   //start('a.cooldown')
-  if (a.cooldown + i['+cooldown'] > 0) {
+  if (a.cooldown + i.attributes['+cooldown'] > 0) {
     i.startedCharging = w.now
-    i.willFinishCharging = w.now + (a.cooldown + i['+cooldown']) * (a.cooldownIsHasted ? 1 / (1 + e['haste']) : 1) * w._second
+    i.willFinishCharging = w.now + (a.cooldown + i.attributes['+cooldown']) * (a.cooldownIsHasted ? 1 / (1 + e['haste']) : 1) * w._second
     if (!e.rechargingAbilities.includes(i)) {
       e.rechargingAbilities.push(i)
     }
@@ -336,10 +343,10 @@ const CastAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...t
   //start('targets.length')
   if (targets.length > 0) {
     //debug(`${e.slug} casting ${a.slug} on targets: ${targets.toString()}`)
-    targets.forEach(t => a.onCast.forEach(h => h(w, e, t)))
+    targets.forEach(t => a.onCast.forEach(h => h(w, e, i, t)))
   } else {
     //debug(`${e.slug} casting ${a.slug}`)
-    a.onCast.forEach(h => h(w, e))
+    a.onCast.forEach(h => h(w, e, i))
   }
   //end('targets.length')
   //start('triggerGCD')
@@ -347,14 +354,16 @@ const CastAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...t
     TriggerGCD(w, e)
   }
   //end('triggerGCD')
-  return true
+  return false
 }
-export { CastAbilityByReference }
+export { CastFreeAbilityByReference }
 const CastFreeAbilityByTemplate = (w: IWorld, e: IEntity, tmpl: IAbilityTemplate, ...targets: IEntity[]): void => {
   if (targets.length > 0) {
-    targets.forEach(t => tmpl.onCast.forEach(h => h(w, e, t)))
+    targets.forEach(t =>
+      tmpl.onCast.forEach(h => h(w, e, { attributes: Object.assign({}, tmpl._abilityAttributes, tmpl.abilityAttributes) } as any, t))
+    )
   } else {
-    tmpl.onCast.forEach(h => h(w, e))
+    tmpl.onCast.forEach(h => h(w, e, { attributes: Object.assign({}, tmpl._abilityAttributes, tmpl.abilityAttributes) } as any))
   }
 }
 export { CastFreeAbilityByTemplate }
@@ -462,7 +471,7 @@ const TeachAbility = (w: IWorld, e: IEntity, a: IAbilityTemplate): void => {
     currentCharges: a.chargeMax,
     startedCharging: -1,
     willFinishCharging: -1,
-    ['+cooldown']: 0
+    attributes: Object.assign({}, a._abilityAttributes, a.abilityAttributes)
   }
   e.restingAbilities.push(x)
   e.abilities[a.slug] = x

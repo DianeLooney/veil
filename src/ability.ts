@@ -12,8 +12,9 @@ interface ILearnFunc {
   (w: IWorld, e: IEntity): void
 }
 interface ICastFunc {
-  (w: IWorld, e: IEntity, ...targets: IEntity[]): void
+  (w: IWorld, e: IEntity, i: IAbilityInstance, ...targets: IEntity[]): void
 }
+export { ICastFunc }
 
 interface IAbilityTemplate {
   id: number
@@ -24,6 +25,8 @@ interface IAbilityTemplate {
   cooldownIsHasted: boolean
   chargeMax: number
   attributes: { [key: string]: number }
+  abilityAttributes: { [key: string]: number }
+  _abilityAttributes: { [key: string]: number }
   requires: { [key: string]: number }
   cost: { [key: string]: number }
   onCast: ICastFunc[]
@@ -38,6 +41,11 @@ const AbilityDefaults: IAbilityTemplate = {
   cooldownIsHasted: false,
   chargeMax: 1,
   attributes: {},
+  abilityAttributes: {},
+  _abilityAttributes: {
+    ['+cooldown']: 0,
+    ['*damage']: 0
+  },
   requires: {},
   cost: {},
   onCast: []
@@ -61,6 +69,6 @@ interface IAbilityInstance {
   currentCharges: number
   startedCharging: number
   willFinishCharging: number
-  '+cooldown': number
+  attributes: { [key: string]: number }
 }
 export { IAbilityInstance }

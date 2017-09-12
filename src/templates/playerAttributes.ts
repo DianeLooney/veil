@@ -89,6 +89,14 @@ let attributes = {
   ['damage']: function(e) {
     return e['*damage'] * (1 + e['vers:damage-done'])
   },
+  ['*damage:physical']: 1,
+  ['damage:physical']: function(e) {
+    return e['damage'] * e['*damage:physical']
+  },
+  ['*damage:fire']: 1,
+  ['damage:fire']: function(e) {
+    return e['damage'] * e['*damage:fire']
+  },
   ['+mastery:rating']: 0,
   ['mastery:rating:conversion:standard']: 40000,
   ['mastery:standard:base']: 0.08,

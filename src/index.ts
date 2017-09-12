@@ -117,7 +117,7 @@ if (perfMode) {
   idiot.slug = 'idiot'
   _.InitEntity(w, e, playerAttrs)
   _.InitEntity(w, idiot, bossAttrs)
-  _.SelectTalent(w, e, e._talents[0])
+  e._talents.forEach(t => _.SelectTalent(w, e, t))
   _.SpawnEntity(w, e)
   _.SpawnEntity(w, idiot)
   let first = true
