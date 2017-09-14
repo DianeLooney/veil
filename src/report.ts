@@ -1,9 +1,27 @@
+import * as express from 'express'
+let expressWs = require('express-ws')
+let app = expressWs(express()).app
+
+let clients = []
+app.ws('/combatlog', function(ws, req) {
+  console.log('Client connected')
+  clients.push(ws)
+})
+
+app.listen(8080)
+let isReady = function() {
+  return clients.length > 0
+}
+export { isReady }
 export default function report(event: string, data: any) {
   switch (event) {
     case 'ERROR':
       //console.log(`[${event}] ${data.type}: ${data.details}`)
       break
     case 'ABILITY_CASTED':
+      clients.forEach(c => {
+        c.send(JSON.stringify({ event, entity: data.entity.slug, spell: data.spell.slug }))
+      })
       //console.log(`[${event}] ${data.entity.slug}: ${data.spell.slug}`)
       break
 

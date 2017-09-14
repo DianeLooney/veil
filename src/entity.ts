@@ -42,9 +42,6 @@ interface IVector {
   dy: number
 }
 interface IAttributeGroup {
-  ability?: {
-    [key: string]: { [key: string]: number }
-  }
   [key: string]: number
 }
 export { IAttributeGroup }

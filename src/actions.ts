@@ -233,14 +233,14 @@ const EquipItem = (w: IWorld, e: IEntity, slot: string, i: IItem): void => {
   e.items[slot] = i
   for (var stat in i.stats) {
     if (stat === 'ability') {
-      let y = i.stats[stat]
-      for (var ability in i.stats[stat]) {
+      let y = i.stats.ability as any
+      for (var ability in y) {
         let x = e.abilities[ability]
         if (x === undefined) {
           continue
         }
-        for (var s in i.stats[stat][ability]) {
-          GainAttribute(x, s, i.stats[stat][ability][s])
+        for (var s in y[ability]) {
+          GainAttribute(x, s, y[ability][s])
         }
       }
     } else {
@@ -321,6 +321,7 @@ const CastAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...t
 export { CastAbilityByReference }
 const CastFreeAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...targets: IEntity[]): boolean => {
   let a = i.template
+  report('ABILITY_CASTED', { entity: e, spell: i.template })
   debug(`\t${formatTime(w.now)}\t${e.slug} casts ${a.slug}`)
   //end('costs')
   i.currentCharges = i.currentCharges - 1
@@ -557,14 +558,14 @@ const _applyModifierAttrs = (w: IWorld, src: IEntity, tar: IEntity, m: IModifier
   }
   for (let attr in m.attributes) {
     if (attr === 'ability') {
-      let y = m.attributes[attr]
-      for (var ability in m.attributes[attr]) {
+      let y = m.attributes.ability as any
+      for (var ability in y) {
         let x = tar.abilities[ability]
         if (x === undefined) {
           continue
         }
-        for (var s in m.attributes[attr][ability]) {
-          GainAttribute(x, s, m.attributes[attr][ability][s])
+        for (var s in y[ability]) {
+          GainAttribute(x, s, y[ability][s])
         }
       }
     } else {
@@ -584,7 +585,7 @@ const _dropModifierAttrs = (w: IWorld, src: IEntity, tar: IEntity, m: IModifierT
   for (let attr in m.attributes) {
     if (attr === 'ability') {
       let y = m.attributes[attr]
-      for (var ability in m.attributes[attr]) {
+      for (var ability in m.attributes[attr] as any) {
         let x = tar.abilities[ability]
         if (x === undefined) {
           continue
@@ -610,7 +611,7 @@ const _applyTickerAttrs = (w: IWorld, src: IEntity, tar: IEntity, m: ITickerTemp
   for (let attr in m.attributes) {
     if (attr === 'ability') {
       let y = m.attributes[attr]
-      for (var ability in m.attributes[attr]) {
+      for (var ability in m.attributes[attr] as any) {
         let x = tar.abilities[ability]
         if (x === undefined) {
           continue
@@ -639,7 +640,7 @@ const _dropTickerAttrs = (w: IWorld, src: IEntity, tar: IEntity, m: ITickerTempl
   for (let attr in m.attributes) {
     if (attr === 'ability') {
       let y = m.attributes[attr]
-      for (var ability in m.attributes[attr]) {
+      for (var ability in m.attributes[attr] as any) {
         let x = tar.abilities[ability]
         if (x === undefined) {
           continue
@@ -761,7 +762,7 @@ const SelectTalent = (w: IWorld, e: IEntity, t: ITalentSlot): void => {
   for (let attr in t.attributes) {
     if (attr === 'ability') {
       let y = t.attributes[attr]
-      for (var ability in t.attributes[attr]) {
+      for (var ability in t.attributes[attr] as any) {
         let x = e.abilities[ability]
         if (x === undefined) {
           continue
@@ -784,7 +785,7 @@ const UnselectTalent = (w: IWorld, e: IEntity, t: ITalentSlot): void => {
   for (let attr in t.attributes) {
     if (attr === 'ability') {
       let y = t.attributes[attr]
-      for (var ability in t.attributes[attr]) {
+      for (var ability in t.attributes[attr] as any) {
         let x = e.abilities[ability]
         if (x === undefined) {
           continue

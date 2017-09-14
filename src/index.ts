@@ -7,6 +7,7 @@ import dhVengeance from './templates/dh/vengeance'
 import newSavedya from './templates/dh/savedya'
 import savedya_gg from './templates/dh/savedya_greenglaives'
 import consts from './consts'
+import { isReady } from './report'
 import * as _debug from 'debug'
 const debug = _debug('index')
 import * as microtime from 'microtime'
@@ -125,6 +126,9 @@ if (perfMode) {
   //console.log(e.abilities['infernal-strike'].template['+cooldown'])
 
   setInterval(() => {
+    if (!isReady()) {
+      return
+    }
     //start('tick')
     _.TickWorld(w)
     //end('tick')
