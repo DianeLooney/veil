@@ -6,8 +6,9 @@ import { IWorld, formatTime } from './world'
 import { parse, build } from './templates/attributeParser'
 import report from './report'
 import { start, end } from './perf'
-import * as _debug from 'debug'
-let debug
+
+const _debug = require('debug')
+let debug: any
 if (process.env.VEIL_MODE !== 'PERF') {
   debug = _debug('actions')
 } else {
@@ -46,7 +47,7 @@ const TickWorld = (w: IWorld): void => {
   //start('loop2')
   w.entities.forEach(e => {
     while (e.tickers[0] !== undefined && e.tickers[0].nextTick <= w.now) {
-      let x = e.tickers.shift()
+      let x = e.tickers.shift() as ITickerInstance
       x.template.onInterval.forEach(h => h(w, x.source, e))
       let next = Math.min(
         x.expires,

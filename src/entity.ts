@@ -77,29 +77,26 @@ interface IEntity {
   position: IPosition
   facing: IVector
   items: {
-    head: IItem
-    neck: IItem
-    shoulder: IItem
-    back: IItem
-    chest: IItem
-    wrist: IItem
-    hands: IItem
-    waist: IItem
-    legs: IItem
-    feet: IItem
-    finger1: IItem
-    finger2: IItem
-    trinket1: IItem
-    trinket2: IItem
-    mainHand: IItem
-    offHand: IItem
+    head?: IItem
+    neck?: IItem
+    shoulder?: IItem
+    back?: IItem
+    chest?: IItem
+    wrist?: IItem
+    hands?: IItem
+    waist?: IItem
+    legs?: IItem
+    feet?: IItem
+    finger1?: IItem
+    finger2?: IItem
+    trinket1?: IItem
+    trinket2?: IItem
+    mainHand?: IItem
+    offHand?: IItem
   }
   _talents: ITalentSlot[]
   talentsBySlug: { [key: string]: ITalentSlot }
   talentsByRow: ITalentSlot[][]
-  hookDamageTakenPre: { (w: IWorld, src: IEntity, tar: IEntity, args: any): void }[]
-  hookDamageTaken: { (w: IWorld, src: IEntity, tar: IEntity, args: any): void }[]
-  hookDamageTakenPost: { (w: IWorld, src: IEntity, tar: IEntity, args: any): void }[]
   _attributes: any
   rng: { [key: string]: any }
   abilities: { [key: string]: IAbilityInstance }
@@ -136,27 +133,7 @@ const DefaultEntity = function(): IEntity {
     _attributes: attributes,
     position: { x: 0, y: 0 },
     facing: { dx: 0, dy: 1 },
-    items: {
-      head: undefined,
-      neck: undefined,
-      shoulder: undefined,
-      back: undefined,
-      chest: undefined,
-      wrist: undefined,
-      hands: undefined,
-      waist: undefined,
-      legs: undefined,
-      feet: undefined,
-      finger1: undefined,
-      finger2: undefined,
-      trinket1: undefined,
-      trinket2: undefined,
-      mainHand: undefined,
-      offHand: undefined
-    },
-    hookDamageTakenPre: [],
-    hookDamageTaken: [],
-    hookDamageTakenPost: [],
+    items: {},
     tickers: [],
     mods: [],
     passives: [],
@@ -192,24 +169,7 @@ const DefaultBossEntity = function(): IEntity {
     _attributes: bossAttributes,
     position: { x: 0, y: 0 },
     facing: { dx: 0, dy: 1 },
-    items: {
-      head: undefined,
-      neck: undefined,
-      shoulder: undefined,
-      back: undefined,
-      chest: undefined,
-      wrist: undefined,
-      hands: undefined,
-      waist: undefined,
-      legs: undefined,
-      feet: undefined,
-      finger1: undefined,
-      finger2: undefined,
-      trinket1: undefined,
-      trinket2: undefined,
-      mainHand: undefined,
-      offHand: undefined
-    },
+    items: {},
     tickers: [],
     mods: [],
     passives: [],
@@ -217,10 +177,6 @@ const DefaultBossEntity = function(): IEntity {
     _talents: [],
     talentsBySlug: {},
     talentsByRow: [],
-
-    hookDamageTakenPre: [],
-    hookDamageTaken: [],
-    hookDamageTakenPost: [],
 
     onInit: [],
     onSpawn: [],

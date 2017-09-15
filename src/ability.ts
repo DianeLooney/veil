@@ -4,7 +4,7 @@ import { IWorld } from './World'
 import report from './report'
 import { start, end } from './perf'
 
-import * as _debug from 'debug'
+const _debug = require('debug')
 const debug = _debug('ability')
 const verbose = _debug('verbose:ability')
 
