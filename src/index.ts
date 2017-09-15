@@ -1,4 +1,4 @@
-import { IEntity, DefaultEntity, DefaultBossEntity } from './entity'
+import { IEntity, DefaultPlayerEntity, DefaultBossEntity } from './entity'
 import * as _ from './actions'
 import { IWorld, DefaultWorld } from './world.js'
 import { IAbilityTemplate, IPassiveTemplate } from './ability.js'
@@ -8,9 +8,9 @@ import newSavedya from './templates/dh/savedya'
 import savedya_gg from './templates/dh/savedya_greenglaives'
 import consts from './consts'
 import { isReady } from './report'
-import * as _debug from 'debug'
+const _debug = require('debug')
 const debug = _debug('index')
-import * as microtime from 'microtime'
+const microtime = require('microtime')
 var now = require('performance-now')
 import { start, end, dump } from './perf'
 
@@ -19,8 +19,6 @@ if (perfMode) {
   debug('Started in Perf mode.')
   let total = 0
   let runs = 100
-  let playerAttrs = _.BuildDefaultAttributesCache(newSavedya())
-  let bossAttrs = _.BuildDefaultAttributesCache(DefaultBossEntity())
   for (let run = 0; run < runs; run++) {
     let startTime = now()
     let endTime
@@ -28,8 +26,8 @@ if (perfMode) {
     const e = Object.assign({}, newSavedya()) as IEntity
     const idiot = DefaultBossEntity()
     idiot.slug = 'idiot'
-    _.InitEntity(w, e, playerAttrs)
-    _.InitEntity(w, idiot, bossAttrs)
+    _.InitEntity(w, e)
+    _.InitEntity(w, idiot)
     _.SpawnEntity(w, e)
     _.SpawnEntity(w, idiot)
     let first = true
@@ -110,14 +108,12 @@ if (perfMode) {
   dump()
 } else {
   debug('Started in Live mode.')
-  let playerAttrs = _.BuildDefaultAttributesCache(newSavedya())
-  let bossAttrs = _.BuildDefaultAttributesCache(DefaultBossEntity())
   const w = DefaultWorld() as IWorld
   const e = Object.assign({}, newSavedya()) as IEntity
   const idiot = DefaultBossEntity()
   idiot.slug = 'idiot'
-  _.InitEntity(w, e, playerAttrs)
-  _.InitEntity(w, idiot, bossAttrs)
+  _.InitEntity(w, e)
+  _.InitEntity(w, idiot)
   e._talents.forEach(t => _.SelectTalent(w, e, t))
   _.SpawnEntity(w, e)
   _.SpawnEntity(w, idiot)

@@ -113,73 +113,8 @@ const Delayed = function(w: IWorld, e: IEntity, f: any) {
   e.delays.sort((x, y) => x.when - y.when)
 }
 export { Delayed }
-const LoadDefaultAttributes = function(e: IEntity) {
-  let d = build(parse(e._attributes))
-  for (let i in d) {
-    let k = i
-    let r = d[k]
-    switch (typeof r.value) {
-      case 'function':
-        delete e[k]
-        Object.defineProperty(e, k, {
-          get: function() {
-            ////start(`attr[${k}]`)
-            if (e[`__${k}__`] === undefined) {
-              e[`__${k}__`] = r.value(e)
-            }
-            ////end(`attr[${k}]`)
-            return e[`__${k}__`]
-          },
-          set: function(v) {
-            console.error(`Unable to set attribute ${k} of ${e.slug}`)
-          }
-        })
-        break
-      default:
-        delete e[k]
-        e[k] = r.value
-    }
-  }
-}
-export { LoadDefaultAttributes }
-const BuildDefaultAttributesCache = function(e: IEntity) {
-  return build(parse(e._attributes))
-}
-export { BuildDefaultAttributesCache }
-const AttachAttributesCache = function(e: IEntity, d: any) {
-  for (let i in d) {
-    let k = i
-    let r = d[k]
-    switch (typeof r.value) {
-      case 'function':
-        delete e[k]
-        Object.defineProperty(e, k, {
-          get: function() {
-            ////start(`attr[${k}]`)
-            if (e[`__${k}__`] === undefined) {
-              e[`__${k}__`] = r.value(e)
-            }
-            ////end(`attr[${k}]`)
-            return e[`__${k}__`]
-          },
-          set: function(v) {
-            console.error(`Unable to set attribute ${k} of ${e.slug}`)
-          }
-        })
-        break
-      default:
-        delete e[k]
-        e[k] = r.value
-    }
-  }
-}
-export { AttachAttributesCache }
+
 const InitEntity = (w: IWorld, e: IEntity, c?: any): void => {
-  if (c !== undefined) {
-    AttachAttributesCache(e, c)
-  } else {
-    LoadDefaultAttributes(e)
-  }
   e.talentsByRow = [
     [undefined, undefined, undefined],
     [undefined, undefined, undefined],

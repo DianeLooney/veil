@@ -7,6 +7,8 @@ import consts from './consts'
 import attributes from './templates/playerAttributes'
 import bossAttributes from './templates/bossAttributes'
 import { IRngSource } from './rng'
+import attachPlayerAttributes from './templates/playerAttributes'
+import { IPlayerAttributes } from './templates/playerAttributes'
 
 interface IResource {
   current: number
@@ -64,7 +66,7 @@ export const DefaultTalentSlot: ITalentSlot = {
   attributes: {}
 }
 export { ITalentSlot }
-interface IEntity {
+interface IEntity extends IPlayerAttributes {
   key: symbol
   id: number
   slug: string
@@ -116,8 +118,8 @@ interface IEntity {
 }
 export { IEntity }
 
-const DefaultEntity = function(): IEntity {
-  return {
+const DefaultPlayerEntity = function(): IEntity {
+  return attachPlayerAttributes({
     key: Symbol('Entity'),
     id: 0,
     slug: '',
@@ -149,11 +151,11 @@ const DefaultEntity = function(): IEntity {
     onUnequipItem: [],
     delays: [],
     rng: {}
-  }
+  }) as IEntity
 }
 
 const DefaultBossEntity = function(): IEntity {
-  return {
+  return attachPlayerAttributes({
     key: Symbol('Entity'),
     id: 0,
     slug: '',
@@ -185,7 +187,7 @@ const DefaultBossEntity = function(): IEntity {
     onUnequipItem: [],
     delays: [],
     rng: {}
-  }
+  }) as IEntity
 }
 
-export { DefaultEntity, DefaultBossEntity }
+export { DefaultPlayerEntity, DefaultBossEntity }

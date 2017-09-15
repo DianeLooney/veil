@@ -1,4 +1,4 @@
-import { IEntity, DefaultEntity } from './Entity'
+import { IEntity, DefaultPlayerEntity } from './Entity'
 import * as _ from './actions'
 import { IWorld } from './World'
 import report from './report'
