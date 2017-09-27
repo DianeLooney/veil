@@ -68,7 +68,7 @@ function build(depList) {
   })
   return attrs
 }
-let locations = [{ name: 'PlayerAttributes', path: '/src/templates/playerAttributes' }]
+let locations = [{ name: 'PlayerAttributes', path: '/src/attrs/player' }, { name: 'VengeanceAttributes', path: '/src/attrs/vengeance' }]
 locations.map(batch => {
   let x = batch.path
   let data = build(parse(require('..' + x + '_template.js')))
@@ -78,48 +78,64 @@ locations.map(batch => {
 
   out += `interface I${batch.name} {\n`
   for (let k in data) {
-    out += `'${k}': number\n`
+    if (data[k].value instanceof Array) {
+      out += `  '${k}': number[]\n`
+    } else {
+      out += `  '${k}': number\n`
+    }
     //out += `private '__${k}__': number|undefined\n`
   }
   out += '}\n'
   out += `export { I${batch.name} }\n`
   out += `interface i${batch.name} extends I${batch.name} {\n`
   for (let k in data) {
-    out += `'__${k}__': number|undefined\n`
+    if (data[k].value instanceof Array) {
+      out += `'__${k}__': number[]|undefined\n`
+    } else {
+      out += `'__${k}__': number|undefined\n`
+    }
   }
   out += '}\n'
   out += `export default function attach${batch.name}(o: any):I${batch.name}{\n`
   out += `let e = o as i${batch.name}\n`
   out += '  let calc: { [key: string]: ICalcFunc | number } = {}\n'
   for (let k in data) {
-    out += `delete e['${k}']\n`
+    out += `  delete e['${k}']\n`
     if (typeof data[k].value === 'function') {
-      out += `calc['${k}'] = ${data[k].value.toString()}\n`
+      out += `  calc['${k}'] = ${data[k].value.toString()}\n`
     }
-    out += `Object.defineProperty(e, '${k}', {
-  get: function() {
-    if (e['__${k}__'] === undefined) {\n`
+    out += `  Object.defineProperty(e, '${k}', {
+    get: function() {
+      if (e['__${k}__'] === undefined) {\n`
     if (typeof data[k].value === 'function') {
-      out += `e['__${k}__'] = (calc['${k}'] as ICalcFunc)(e)
+      out += `      e['__${k}__'] = (calc['${k}'] as ICalcFunc)(e)
       }\n`
-    } else {
-      out += `e['__${k}__'] = ${data[k].value}
+    } else if (typeof data[k].value === 'number') {
+      out += `      e['__${k}__'] = ${data[k].value}
       }\n`
+    } else if (data[k].value instanceof Array) {
+      out += `    e['__${k}__'] = [${data[k].value.join(',')}]
+    }\n`
     }
 
-    out += `return e['__${k}__']
+    out += `      return e['__${k}__']
   },
   set: function(v) {\n`
-
     if (typeof data[k].value === 'function') {
-      out += `    console.error('Unable to set attribute ${k}')\n`
-    } else {
+      out += `      console.error('Unable to set attribute ${k}')\n`
+    } else if (typeof data[k].value === 'number') {
       data[k].children.forEach(c => {
-        out += `    e['__${c}__'] = undefined\n`
+        out += `      e['__${c}__'] = undefined\n`
       })
-      out += `    e['__${k}__'] = ${data[k].value.toString()}\n`
+      out += `      e['__${k}__'] = v\n`
+    } else if (data[k].value instanceof Array) {
+      data[k].children.forEach(c => {
+        out += `      e['__${c}__'] = undefined\n`
+      })
+      out += `      e['__${k}__'] = v\n`
     }
-    out += `}})\n`
+    out += `    }
+  })\n`
 
     //console.log(`${k}:\t${data[k].toString()}`)
   }

@@ -1,5 +1,5 @@
 import { ITalentSlot, DefaultTalentSlot } from '../../entity'
-import { IEntity, DefaultEntity } from '../../Entity'
+import { IEntity } from '../../Entity'
 import { IWorld, formatTime } from '../../world'
 import { spawnFragment, consumeFragment } from './vengeance'
 import * as _ from '../../actions'

@@ -1,12 +1,14 @@
-import { IEntity, DefaultEntity } from '../../Entity'
+import { IEntity, DefaultPlayerEntity } from '../../Entity'
 import { IItem } from '../../item'
 import { IWorld, formatTime } from '../../world'
 import * as _ from '../../actions'
+import { IVengeanceAttributes } from '../../attrs/vengeance'
+import attachVengeanceAttributes from '../../attrs/vengeance'
 import { IAbilityTemplate, AbilityDefaults, IPassiveTemplate, IAbilityInstance, ICastFunc } from '../../Ability'
 import { IModifierTemplate, ITickerTemplate } from '../../Modifier'
 import { sequence, rppm } from '../../rng'
 import report from '../../report'
-import * as _debug from 'debug'
+const _debug = require('debug')
 import { start, end } from '../../perf'
 
 import * as talents from './vengeance-talents'
@@ -620,9 +622,10 @@ const enchantsPassive: IPassiveTemplate = {
   }
 }
 const DefaultVengeance = function() {
-  let x = Object.assign(DefaultEntity(), {
+  let x = Object.assign(DefaultPlayerEntity(), {
     onInit: [
       function(w: IWorld, e: IEntity) {
+        attachVengeanceAttributes(e)
         _.TeachAbility(w, e, shear)
         _.TeachAbility(w, e, demonSpikesSpell)
         _.TeachAbility(w, e, immolationAura)
@@ -680,25 +683,6 @@ const DefaultVengeance = function() {
       }
     ],
     onSpawn: [(w: IWorld, e: IEntity) => {}]
-  })
-  x._attributes = Object.assign(x._attributes, {
-    ['pain:max:base']: 1000,
-    ['+pain:max']: 0,
-    ['pain:current']: 0,
-    ['pain:max']: function(e) {
-      return e['pain:max:base'] + e['+pain:max']
-    },
-    ['fragment:expiration:time']: [],
-    ['fragment:count']: 0,
-    ['*vengeance:damage']: 0.95,
-    ['+shear:damage']: 0.12,
-
-    ['artifact:defensive-spikes:amount']: 0.1,
-    ['artifact:defensive-spikes:duration']: 0.1,
-    ['mastery:rating:conversion:demon-spikes']: 0.75,
-    ['mastery:demon-spikes']: function(e) {
-      return e['mastery:standard'] * e['mastery:rating:conversion:demon-spikes']
-    }
   })
   x._talents = []
   for (let k in talents) {

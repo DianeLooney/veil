@@ -4,11 +4,10 @@ import { IWorld } from './world'
 import { IItem } from './item'
 import { ITickerTemplate, ITickerInstance, IModifierTemplate, IModifierInstance } from './modifier'
 import consts from './consts'
-import attributes from './templates/playerAttributes'
 import bossAttributes from './templates/bossAttributes'
 import { IRngSource } from './rng'
-import attachPlayerAttributes from './templates/playerAttributes'
-import { IPlayerAttributes } from './templates/playerAttributes'
+import attachPlayerAttributes from './attrs/player'
+import { IPlayerAttributes } from './attrs/player'
 
 interface IResource {
   current: number
@@ -99,7 +98,6 @@ interface IEntity extends IPlayerAttributes {
   _talents: ITalentSlot[]
   talentsBySlug: { [key: string]: ITalentSlot }
   talentsByRow: ITalentSlot[][]
-  _attributes: any
   rng: { [key: string]: any }
   abilities: { [key: string]: IAbilityInstance }
   rechargingAbilities: IAbilityInstance[]
@@ -132,7 +130,6 @@ const DefaultPlayerEntity = function(): IEntity {
     abilities: {},
     rechargingAbilities: [],
     restingAbilities: [],
-    _attributes: attributes,
     position: { x: 0, y: 0 },
     facing: { dx: 0, dy: 1 },
     items: {},
@@ -168,7 +165,6 @@ const DefaultBossEntity = function(): IEntity {
     alive: true,
     rechargingAbilities: [],
     restingAbilities: [],
-    _attributes: bossAttributes,
     position: { x: 0, y: 0 },
     facing: { dx: 0, dy: 1 },
     items: {},

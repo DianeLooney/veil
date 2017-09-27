@@ -7,11 +7,16 @@ app.ws('/combatlog', function(ws, req) {
   console.log('Client connected')
   clients.push(ws)
 })
-
-app.listen(8080)
 let isReady = function() {
   return clients.length > 0
 }
+if (process.env.VEIL_MODE === 'LIVE') {
+  app.listen(8080)
+  isReady = function() {
+    return true
+  }
+}
+
 export { isReady }
 export default function report(event: string, data: any) {
   switch (event) {

@@ -366,7 +366,6 @@ const DealDamage = (w: IWorld, e: IEntity, t: IEntity, args: any): void => {
   //end('deal-damage:third-half')
   args.amount = Math.round(args.amount)
 
-  t.hookDamageTakenPost.forEach(h => h(w, e, t, args))
   if (t.health > args.amount) {
     t.health -= args.amount
     ////debug(`damage done:\t${args.source.slug}\t${args.target.slug}\t${args.amount}\t${args.ability.slug}`)
