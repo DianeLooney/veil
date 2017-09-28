@@ -361,7 +361,7 @@ const immolationAuraTicker: ITickerTemplate = {
   onDrop: [],
   onInterval: [
     (w: IWorld, s: IEntity, e: IEntity): void => {
-      e['pain:current'] = Math.min(e['pain:max'], e['pain:current'] + 20)
+      e['pain:current'] += 20
       _.EnemiesTouchingRadius(w, e.position, 8).forEach(x => {
         _.DealDamage(w, s, x, {
           source: s,
@@ -395,7 +395,7 @@ const immolationAura: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
           source: e,
           target: x,
           type: 'FIRE',
-          attackPower: 2.43 * 0.95 * e['damage:fire'] / 6,
+          attackPower: 2.43 * e['damage:vengeance'] * e['damage:fire'] / 6,
           ability: immolationAura
         })
       })

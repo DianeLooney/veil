@@ -9,6 +9,7 @@ import { start, end } from './perf'
 
 const _debug = require('debug')
 let debug: any
+
 if (process.env.VEIL_MODE !== 'PERF') {
   debug = _debug('actions')
 } else {
@@ -44,15 +45,27 @@ const DespawnEntity = (w: IWorld, e: IEntity): void => {
 export { DespawnEntity }
 const TickWorld = (w: IWorld): void => {
   w.now += w._tickDelta
-  //start('loop2')
+  //start('tick:loop1')
   w.entities.forEach(e => {
+    start('tick:loop1:1')
     while (e.tickers[0] !== undefined && e.tickers[0].nextTick <= w.now) {
+      //start('tick:loop1:1:1')
       let x = e.tickers.shift() as ITickerInstance
-      x.template.onInterval.forEach(h => h(w, x.source, e))
+      //end('tick:loop1:1:1')
+      //start('tick:loop1:1:2')
+      start('onInterval:' + x.template.slug)
+      x.template.onInterval.forEach(h => {
+        h(w, x.source, e)
+      })
+      end('onInterval:' + x.template.slug)
+      //end('tick:loop1:1:2')
+
+      //start('tick:loop1:1:3')
       let next = Math.min(
         x.expires,
         x.nextTick + w._second * x.template.interval * (x.template.intervalIsHasted ? 1 / (1 + x.source['haste']) : 1)
       )
+
       if (next > w.now) {
         x.nextTick = next
         e.tickers.push(x)
@@ -63,7 +76,10 @@ const TickWorld = (w: IWorld): void => {
         }
         x.template.onDrop.forEach(h => h(e))
       }
+      //end('tick:loop1:1:3')
     }
+    end('tick:loop1:1')
+    //start('tick:loop1:2')
     while (e.mods[0] !== undefined && e.mods[0].expires <= w.now) {
       let x = e.mods.shift()
       for (let a in x.template.attributes) {
@@ -71,17 +87,18 @@ const TickWorld = (w: IWorld): void => {
       }
       //verbose`Expired mod ${x.template.slug} at ${w.now / 1000}`)
     }
+    //end('tick:loop1:2')
   })
-  //end('loop2')
-  //start('loop3')
+  //end('tick:loop1')
+  //start('tick:loop2')
   w.entities.forEach(e => {
     while (e.delays.length > 0 && e.delays[0].when <= w.now) {
       e.delays[0].func(w, e)
       e.delays.splice(0, 1)
     }
   })
-  //end('loop3')
-  //start('loop4')
+  //end('tick:loop2')
+  //start('tick:loop3')
   w.entities.forEach(e => {
     let changes = false
     while (e.rechargingAbilities.length > 0 && e.rechargingAbilities[0].willFinishCharging <= w.now) {
@@ -104,11 +121,11 @@ const TickWorld = (w: IWorld): void => {
       e.rechargingAbilities.sort((x, y) => x.willFinishCharging - y.willFinishCharging)
     }
   })
-  //end('loop4')
+  //end('tick:loop3')
   report('WORLD_TICKED', { time: w.now / w._second })
 }
 export { TickWorld }
-const Delayed = function(w: IWorld, e: IEntity, f: any) {
+const Delayed = function(w: IWorld, e: IEntity, f: any): void {
   e.delays.push(f)
   e.delays.sort((x, y) => x.when - y.when)
 }
@@ -225,13 +242,13 @@ const CastAbilityByName = (w: IWorld, e: IEntity, slug: string, ...targets: IEnt
 export { CastAbilityByName }
 const CastAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...targets: IEntity[]): boolean => {
   let a = i.template
-  ////start('onGCD')
+  //start('onGCD')
   if (a.onGCD && IsOnGCD(w, e)) {
-    ////end('onGCD')
+    //end('onGCD')
     return false
   }
-  ////end('onGCD')
-  ////start('cooldown')
+  //end('onGCD')
+  //start('cooldown')
   if (a.cooldown + i.attributes['+cooldown'] > 0 && i.currentCharges < 1) {
     //end('cooldown')
     return false
@@ -256,12 +273,12 @@ const CastAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...t
 }
 export { CastAbilityByReference }
 const CastFreeAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...targets: IEntity[]): boolean => {
+  //start('action:CFABR')
   let a = i.template
   report('ABILITY_CASTED', { entity: e, spell: i.template })
   debug(`\t${formatTime(w.now)}\t${e.slug} casts ${a.slug}`)
-  //end('costs')
   i.currentCharges = i.currentCharges - 1
-  //start('a.cooldown')
+  //start('action:CFABR:cooldown')
   if (a.cooldown + i.attributes['+cooldown'] > 0) {
     i.startedCharging = w.now
     i.willFinishCharging = w.now + (a.cooldown + i.attributes['+cooldown']) * (a.cooldownIsHasted ? 1 / (1 + e['haste']) : 1) * w._second
@@ -271,13 +288,13 @@ const CastFreeAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, 
 
     e.rechargingAbilities.sort((x, y) => x.willFinishCharging - y.willFinishCharging)
   }
-  //end('a.cooldown')
-  //start('costremove')
+  //end('action:CFABR:cooldown')
+  //start('action:CFABR:costremove')
   for (let i in a.cost) {
     e[i] -= a.cost[i]
   }
-  //end('costremove')
-  //start('targets.length')
+  //end('action:CFABR:costremove')
+  //start('action:CFABR:targets')
   if (targets.length > 0) {
     //debug(`${e.slug} casting ${a.slug} on targets: ${targets.toString()}`)
     targets.forEach(t => a.onCast.forEach(h => h(w, e, i, t)))
@@ -285,16 +302,18 @@ const CastFreeAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, 
     //debug(`${e.slug} casting ${a.slug}`)
     a.onCast.forEach(h => h(w, e, i))
   }
-  //end('targets.length')
-  //start('triggerGCD')
+  //end('action:CFABR:targets')
+  //start('action:CFABR:gcd')
   if (a.triggersGCD) {
     TriggerGCD(w, e)
   }
-  //end('triggerGCD')
+  //end('action:CFABR:gcd')
+  //end('action:CFABR')
   return false
 }
 export { CastFreeAbilityByReference }
 const CastFreeAbilityByTemplate = (w: IWorld, e: IEntity, tmpl: IAbilityTemplate, ...targets: IEntity[]): void => {
+  //start('action:CastFreeAbilityByTemplate')
   if (targets.length > 0) {
     targets.forEach(t =>
       tmpl.onCast.forEach(h => h(w, e, { attributes: Object.assign({}, tmpl._abilityAttributes, tmpl.abilityAttributes) } as any, t))
@@ -302,10 +321,11 @@ const CastFreeAbilityByTemplate = (w: IWorld, e: IEntity, tmpl: IAbilityTemplate
   } else {
     tmpl.onCast.forEach(h => h(w, e, { attributes: Object.assign({}, tmpl._abilityAttributes, tmpl.abilityAttributes) } as any))
   }
+  //end('action:CastFreeAbilityByTemplate')
 }
 export { CastFreeAbilityByTemplate }
 const DealDamage = (w: IWorld, e: IEntity, t: IEntity, args: any): void => {
-  //start('deal-damage:first-half')
+  //start('action:DealDamage')
   let a: number = 0
   switch (args.type) {
     case 'PHYSICAL':
@@ -335,8 +355,6 @@ const DealDamage = (w: IWorld, e: IEntity, t: IEntity, args: any): void => {
       })
       return
   }
-  //end('deal-damage:first-half')
-  //start('deal-damage:second-half')
 
   args.amount = a
   if (t[e.key] !== undefined && t[e.key]['*target:damage'] !== undefined) {
@@ -353,8 +371,6 @@ const DealDamage = (w: IWorld, e: IEntity, t: IEntity, args: any): void => {
       //verbose'spell did crit')
     }
   }
-  //end('deal-damage:second-half')
-  //start('deal-damage:third-half')
   let dr: number = t['*dr:all']
   if (args.type == 'PHYSICAL') {
     dr *= t['*dr:physical']
@@ -363,7 +379,6 @@ const DealDamage = (w: IWorld, e: IEntity, t: IEntity, args: any): void => {
     dr *= t['*dr:magical']
   }
   args.amount *= dr
-  //end('deal-damage:third-half')
   args.amount = Math.round(args.amount)
 
   if (t.health > args.amount) {
@@ -376,6 +391,7 @@ const DealDamage = (w: IWorld, e: IEntity, t: IEntity, args: any): void => {
     report('DAMAGE_TAKEN', args)
     Kill(args.source, args.ability)
   }
+  //end('action:DealDamage')
 }
 export { DealDamage }
 const DealHealing = (e: IEntity, t: IEntity, args: any): void => {
@@ -396,9 +412,11 @@ const DealHealing = (e: IEntity, t: IEntity, args: any): void => {
 }
 export { DealHealing }
 const Kill = (e: IEntity, a: IAbilityTemplate): void => {
+  //start('action:kill')
   e.alive = false
   e.health = 0
   report('ENTITY_DIED', { unit: e, killingBlow: a })
+  //end('action:kill')
 }
 export { Kill }
 const TeachAbility = (w: IWorld, e: IEntity, a: IAbilityTemplate): void => {

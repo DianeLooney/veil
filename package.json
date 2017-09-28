@@ -5,6 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "babylon": "^6.18.0",
+    "cli-table": "^0.3.1",
     "debug": "^3.0.1",
     "express": "^4.15.4",
     "express-ws": "^3.0.0",
@@ -21,7 +22,8 @@
   "scripts": {
     "sim": "$Env:DEBUG='*,-ability'; node output/index.js",
     "test": "mocha -r ts-node/register tests/index.ts",
-    "live": "$Env:VEIL_MODE='LIVE';$Env:DEBUG='*';node bin/index.js"
+    "live": "$Env:VEIL_MODE='LIVE';$Env:DEBUG='*';node bin/index.js",
+    "perf": "node --noconcurrent_sweeping --expose_gc bin/index.js"
   },
   "repository": {
     "type": "git",

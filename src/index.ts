@@ -21,6 +21,7 @@ if (perfMode) {
   for (let run = 0; run < runs; run++) {
     let startTime = now()
     let endTime
+    //start('spawning')
     const w = DefaultWorld() as IWorld
     const e = Object.assign({}, newSavedya()) as IEntity
     const idiot = DefaultBossEntity()
@@ -29,75 +30,86 @@ if (perfMode) {
     _.InitEntity(w, idiot)
     _.SpawnEntity(w, e)
     _.SpawnEntity(w, idiot)
+    //end('spawning')
     let first = true
+    //start('ticking')
     for (let i = 0; i < 25 * 300; i++) {
-      //start('tick')
+      start('tick')
       _.TickWorld(w)
-      //end('tick')
+      end('tick')
 
       if (!_.IsOnGCD(w, e)) {
-        //start('casts')
+        start('casts')
 
         //start(`cast:'empower-wards'`)
         if (_.CastAbilityByName(w, e, 'empower-wards')) {
-          //end('casts')
+          end('casts')
           //end(`cast:'empower-wards'`)
           continue
         }
+        //start(`cast:'infernal-strike'`)
         if (_.CastAbilityByName(w, e, 'infernal-strike', idiot)) {
-          //end('casts')
+          end('casts')
           //end(`cast:'infernal-strike'`)
           continue
         }
+        //start(`cast:'metamorphosis'`)
         if (_.CastAbilityByName(w, e, 'metamorphosis', idiot)) {
-          //end('casts')
+          end('casts')
           //end(`cast:'metamorphosis'`)
           continue
         }
         //start(`cast:'demon-spikes'`)
         if (_.CastAbilityByName(w, e, 'demon-spikes')) {
-          //end('casts')
+          end('casts')
           //end(`cast:'demon-spikes'`)
           continue
         }
         //start(`cast:'soul-carver'`)
         if (_.CastAbilityByName(w, e, 'soul-carver', idiot)) {
-          //end('casts')
+          end('casts')
           //end(`cast:'soul-carver'`)
           continue
         }
         //start(`cast:'sigil-of-flame'`)
         if (_.CastAbilityByName(w, e, 'sigil-of-flame', idiot)) {
-          //end('casts')
+          end('casts')
           //end(`cast:'sigil-of-flame'`)
           continue
         }
         //start(`cast:'immolation-aura'`)
         if (_.CastAbilityByName(w, e, 'immolation-aura')) {
-          //end('casts')
+          end('casts')
           //end(`cast:'immolation-aura'`)
           continue
         }
         //start(`cast:'spirit-bomb'`)
-        if (e['fragment:count'] >= 4 && _.CastAbilityByName(w, e, 'spirit-bomb')) {
-          //end('casts')
+        if (_.CastAbilityByName(w, e, 'spirit-bomb')) {
+          end('casts')
           //end(`cast:'spirit-bomb'`)
           continue
         }
         //start(`cast:'fracture'`)
-        if (e['pain:current'] >= 300 && _.CastAbilityByName(w, e, 'fracture', idiot)) {
-          //end('casts')
+        if (_.CastAbilityByName(w, e, 'fracture', idiot)) {
+          end('casts')
           //end(`cast:'fracture'`)
           continue
         }
         //start(`cast:'shear'`)
         if (_.CastAbilityByName(w, e, 'shear', idiot)) {
-          //end('casts')
+          end('casts')
           //end(`cast:'shear'`)
           continue
         }
       }
     }
+    //end('ticking')
+    if (run % 10 === 0) {
+      //start('gc')
+      global.gc()
+      //end('gc')
+    }
+
     endTime = now()
     total += endTime - startTime
     //debug('This time:', endTime - startTime)
@@ -133,59 +145,59 @@ if (perfMode) {
 
       //start(`cast:'empower-wards'`)
       if (_.CastAbilityByName(w, e, 'empower-wards')) {
-        //end('casts')
+        end('casts')
         //end(`cast:'empower-wards'`)
         return
       }
       if (_.CastAbilityByName(w, e, 'infernal-strike', idiot)) {
-        //end('casts')
+        end('casts')
         //end(`cast:'infernal-strike'`)
         return
       }
       if (_.CastAbilityByName(w, e, 'metamorphosis', idiot)) {
-        //end('casts')
+        end('casts')
         //end(`cast:'metamorphosis'`)
         return
       }
       //start(`cast:'demon-spikes'`)
       if (_.CastAbilityByName(w, e, 'demon-spikes')) {
-        //end('casts')
+        end('casts')
         //end(`cast:'demon-spikes'`)
         return
       }
       //start(`cast:'soul-carver'`)
       if (_.CastAbilityByName(w, e, 'soul-carver', idiot)) {
-        //end('casts')
+        end('casts')
         //end(`cast:'soul-carver'`)
         return
       }
       //start(`cast:'sigil-of-flame'`)
       if (_.CastAbilityByName(w, e, 'sigil-of-flame', idiot)) {
-        //end('casts')
+        end('casts')
         //end(`cast:'sigil-of-flame'`)
         return
       }
       //start(`cast:'immolation-aura'`)
       if (_.CastAbilityByName(w, e, 'immolation-aura')) {
-        //end('casts')
+        end('casts')
         //end(`cast:'immolation-aura'`)
         return
       }
       //start(`cast:'spirit-bomb'`)
       if (e['fragment:count'] >= 4 && _.CastAbilityByName(w, e, 'spirit-bomb')) {
-        //end('casts')
+        end('casts')
         //end(`cast:'spirit-bomb'`)
         return
       }
       //start(`cast:'fracture'`)
       if (e['pain:current'] >= 300 && _.CastAbilityByName(w, e, 'fracture', idiot)) {
-        //end('casts')
+        end('casts')
         //end(`cast:'fracture'`)
         return
       }
       //start(`cast:'shear'`)
       if (_.CastAbilityByName(w, e, 'shear', idiot)) {
-        //end('casts')
+        end('casts')
         //end(`cast:'shear'`)
         return
       }
