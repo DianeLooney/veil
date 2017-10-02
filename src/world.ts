@@ -2,19 +2,26 @@ import { IEntity } from './entity'
 import { IItem } from './item'
 import report from './report'
 import * as _debug from 'debug'
+import { ISubscription, INotifyFunc } from './metric'
 const debug = _debug('world')
 const debugVerbose = _debug('world:verbose')
 
 interface IWorld {
   _second: number
   _tickDelta: number
+  _subscriptions: {
+    [key: string]: {
+      filters?: string[]
+      f: INotifyFunc
+    }[]
+  }
 
   now: number
   entities: IEntity[]
   slug: string
 }
 
-const formatTime = function (n: number): string {
+const formatTime = function(n: number): string {
   let x = Math.floor(n / 1000)
   let millis = '' + (n - x * 1000)
   while (millis.length < 3) {
@@ -35,8 +42,9 @@ const formatTime = function (n: number): string {
 export { formatTime }
 
 export { IWorld }
-const DefaultWorld = function (): IWorld {
+const DefaultWorld = function(): IWorld {
   return {
+    _subscriptions: {},
     _second: 1000,
     _tickDelta: 40,
 

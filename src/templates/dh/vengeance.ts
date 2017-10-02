@@ -18,13 +18,15 @@ const verbose = _debug('verbose:vengeance')
 
 import artifactMappings from '../../consts/artifactMappings'
 
-const soulFragmentConsume: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
+const soulFragmentConsume = {
+  ...AbilityDefaults,
   id: 204255,
   slug: 'soul-fragment-consume',
   onGCD: false,
   triggersGCD: false
-})
-const infernalStrike: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
+}
+const infernalStrike: IAbilityTemplate = {
+  ...AbilityDefaults,
   id: 189110,
   slug: 'infernal-strike',
 
@@ -52,19 +54,20 @@ const infernalStrike: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
               source: e,
               target: t,
               type: 'FIRE',
-              attackpower: 3.16 * e['*vengeance:damage'] * e['damage:fire'],
-              ability: shear
+              attackPowerDamage: 3.16 * e['*vengeance:damage'],
+              ability: infernalStrike
             })
           })
         }
       })
     }
   ] as ICastFunc[]
-})
-const soulFragmentSpawn = Object.assign({}, AbilityDefaults, {
+}
+const soulFragmentSpawn: IAbilityTemplate = {
+  ...AbilityDefaults,
   id: 204255,
   slug: 'soul-fragment-spawn'
-})
+}
 const metamorphosisModBase: ITickerTemplate = {
   id: 187827,
   slug: 'metamorphosis',
@@ -92,7 +95,8 @@ const metamorphosisModCasted: ITickerTemplate = Object.assign({}, metamorphosisM
 const metamorphosisModProc: ITickerTemplate = Object.assign({}, metamorphosisModBase, {
   duration: 5
 })
-const metamorphosis: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
+const metamorphosis = {
+  ...AbilityDefaults,
   id: 187827,
   slug: 'metamorphosis',
   cooldown: 180,
@@ -104,7 +108,7 @@ const metamorphosis: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
       _.ApplyTicker(w, e, e, metamorphosisModCasted)
     }
   ] as ICastFunc[]
-})
+}
 const spawnFragment = function(w: IWorld, e: IEntity, greater: boolean): void {
   debug('spawning a soul-fragment')
 
@@ -130,7 +134,7 @@ const consumeFragment = function(w: IWorld, e: IEntity, count: number): void {
     e['fragment:expiration:time'].shift()
     e['fragment:count'] -= 1
     _.DealHealing(e, e, {
-      attackPower: 2.5,
+      attackPowerDamage: 2.5,
       spell: soulFragmentConsume
     })
     if (e['trait:painbringer:rank'] !== undefined && e['trait:painbringer:rank'] >= 1) {
@@ -158,36 +162,21 @@ const painbringerMod: IModifierTemplate = {
   duration: 4,
   durationIsHasted: false
 }
-const shear = Object.assign({}, AbilityDefaults, {
+const shear: IAbilityTemplate = {
+  ...AbilityDefaults,
   id: 203782,
   slug: 'shear',
   onCast: [
     (w: IWorld, e: IEntity, i: IAbilityInstance, t: IEntity) => {
-      //340% Weapon Damage
-      //+100 Pain
-      //Shatter
-      //start('shear:mult-calc')
-      let z = 3.4 * e['*vengeance:damage'] * e['damage:physical'] * (1 + e['+shear:damage'])
-      //end('shear:mult-calc')
-
-      //start('shear:deal-damage')
-      _.DealDamage(w, e, t, {
-        source: e,
-        target: t,
+      let z = _.DealDamage(w, e, t, {
         type: 'PHYSICAL',
-        mhDamageNorm: z,
+        mhDamageNorm: 3.4 * e['*vengeance:damage'],
         ability: shear
       })
-      //end('shear:deal-damage')
-      //start('shear:pain')
       e['pain:current'] += 100
-      //end('shear:pain')
-      //start('shear:shatter')
       if (!e.rng['shear:shatter']) {
         e.rng['shear:shatter'] = sequence([0.04, 0.12, 0.25, 0.4, 0.6, 0.8, 0.9, 1.0])
       }
-      //end('shear:shatter')
-      //start('shear-artifact')
       if (e['trait:shatter-the-souls:rank'] !== undefined && e.health < 0.5 * e['maxHealth']) {
         if (e.rng['shear:shatter'].next(1 + e['trait:shatter-the-souls:rank'] * 0.05)) {
           spawnFragment(w, e, false)
@@ -197,10 +186,9 @@ const shear = Object.assign({}, AbilityDefaults, {
           spawnFragment(w, e, false)
         }
       }
-      //end('shear-artifact')
     }
   ] as ICastFunc[]
-})
+}
 
 const sigilOfFlameTicker: ITickerTemplate = {
   id: 204598,
@@ -215,10 +203,8 @@ const sigilOfFlameTicker: ITickerTemplate = {
   onInterval: [
     (w: IWorld, s: IEntity, e: IEntity): void => {
       _.DealDamage(w, s, e, {
-        source: s,
-        target: e,
         type: 'FIRE',
-        attackPower: 1.86 * 0.95 * s['damage:fire'] / 6,
+        attackPowerDamage: 1.86 * s['*vengeance:damage'] / 6,
         ability: sigilOfFlame
       })
     }
@@ -226,7 +212,8 @@ const sigilOfFlameTicker: ITickerTemplate = {
   interval: 1,
   intervalIsHasted: false
 }
-const sigilOfFlame: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
+const sigilOfFlame = {
+  ...AbilityDefaults,
   slug: 'sigil-of-flame',
   cooldown: 30,
   abilityAttributes: { '+selfcast-enabled': 0 },
@@ -245,10 +232,8 @@ const sigilOfFlame: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
           //TODO: Make this an AE spell
           _.EnemiesTouchingRadius(w, x, 8).forEach(y => {
             _.DealDamage(w, e, y, {
-              source: e,
-              target: y,
               type: 'FIRE',
-              attackPower: 1.86 * 0.95 * e['damage:fire'],
+              attackPowerDamage: 1.86 * e['*vengeance:damage'],
               ability: sigilOfFlame
             })
             _.ApplyTicker(w, e, y, sigilOfFlameTicker)
@@ -257,7 +242,7 @@ const sigilOfFlame: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
       })
     }
   ] as ICastFunc[]
-})
+}
 const fieryBrandTicker: ITickerTemplate = {
   id: 204021,
   slug: 'fiery-brand',
@@ -278,14 +263,15 @@ const burningAliveTicker: ITickerTemplate = Object.assign({}, fieryBrandTicker, 
       //TODO: Implement spreading logic
       _.DealDamage(w, s, e, {
         type: 'FIRE',
-        attackPower: 0.52 * e['*vengeance:damage'] * e['damage:fire'],
+        attackPowerDamage: 0.52 * e['*vengeance:damage'],
         ability: fieryBrand
       })
     }
   ]
 })
 
-const fieryBrand: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
+const fieryBrand = {
+  ...AbilityDefaults,
   id: 204021,
   slug: 'fiery-brand',
   cooldown: 60,
@@ -296,16 +282,14 @@ const fieryBrand: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   onCast: [
     (w: IWorld, e: IEntity, i: IAbilityInstance, t: IEntity) => {
       _.DealDamage(w, e, t, {
-        source: e,
-        target: t,
         type: 'FIRE',
-        attackPower: 8.13 * e['*vengeance:damage'] * e['damage:fire'],
+        attackPowerDamage: 8.13 * e['*vengeance:damage'],
         ability: fieryBrand
       })
       _.ApplyTicker(w, e, t, fieryBrandTicker)
     }
   ] as ICastFunc[]
-})
+}
 const demonSpikesMod: IModifierTemplate = {
   id: 203819,
   slug: 'demon-spikes',
@@ -325,7 +309,8 @@ const defensiveSpikesMod: IModifierTemplate = {
   sourcedAttributes: undefined
 }
 
-const demonSpikesSpell: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
+const demonSpikesSpell = {
+  ...AbilityDefaults,
   slug: 'demon-spikes',
   cooldown: 12,
   chargeMax: 2,
@@ -348,7 +333,7 @@ const demonSpikesSpell: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
       }
     }
   ] as ICastFunc[]
-})
+}
 const immolationAuraTicker: ITickerTemplate = {
   id: 223061,
   slug: 'immolation-aura',
@@ -364,10 +349,8 @@ const immolationAuraTicker: ITickerTemplate = {
       e['pain:current'] += 20
       _.EnemiesTouchingRadius(w, e.position, 8).forEach(x => {
         _.DealDamage(w, s, x, {
-          source: s,
-          target: x,
           type: 'FIRE',
-          attackPower: 0.69 * 0.95 * s['damage:fire'] / 6,
+          attackPowerDamage: 0.69 * e['*vengeance:damage'] / 6,
           ability: immolationAura
         })
       })
@@ -376,7 +359,8 @@ const immolationAuraTicker: ITickerTemplate = {
   interval: 1,
   intervalIsHasted: false
 }
-const immolationAura: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
+const immolationAura = {
+  ...AbilityDefaults,
   slug: 'immolation-aura',
   cooldown: 15,
   cooldownIsHasted: true,
@@ -392,17 +376,15 @@ const immolationAura: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
           spawnFragment(w, e, false)
         }
         _.DealDamage(w, e, x, {
-          source: e,
-          target: x,
           type: 'FIRE',
-          attackPower: 2.43 * e['damage:vengeance'] * e['damage:fire'] / 6,
+          attackPowerDamage: 2.43 * e['*vengeance:damage'] / 6,
           ability: immolationAura
         })
       })
       _.ApplyTicker(w, e, e, immolationAuraTicker)
     }
   ] as ICastFunc[]
-})
+}
 
 const soulCarverTicker: ITickerTemplate = {
   id: -2,
@@ -418,10 +400,8 @@ const soulCarverTicker: ITickerTemplate = {
     (w: IWorld, s: IEntity, e: IEntity): void => {
       spawnFragment(w, s, false)
       _.DealDamage(w, s, e, {
-        source: s,
-        target: e,
         type: 'FIRE',
-        attackpower: 1.55 * 0.95 * s['damage:fire'], //TODO: Add fire damage modifier in here
+        attackPowerDamage: 1.55 * s['*vengeance:damage'], //TODO: Add fire damage modifier in here
         ability: soulCarver
       })
     }
@@ -429,31 +409,28 @@ const soulCarverTicker: ITickerTemplate = {
   interval: 1,
   intervalIsHasted: false
 }
-const soulCarver: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
+const soulCarver = {
+  ...AbilityDefaults,
   slug: 'soul-carver',
   cooldown: 45,
   onCast: [
     (w: IWorld, e: IEntity, i: IAbilityInstance, t: IEntity) => {
       spawnFragment(w, e, false)
       _.DealDamage(w, e, t, {
-        source: e,
-        target: t,
         type: 'FIRE',
-        'mainHand:damage:normalized': 5.07 * e['damage:vengeance'] * e['damage:fire'], //TODO: Add fire damage modifier in here
+        mhDamageNorm: 5.07 * e['*vengeance:damage'],
         ability: soulCarver
       })
       spawnFragment(w, e, false)
       _.DealDamage(w, e, t, {
-        source: e,
-        target: t,
         type: 'FIRE',
-        'offHand:damage:normalized': 5.07 * e['damage:vengeance'] * e['damage:fire'], //TODO: Add fire damage modifier in here
+        ohDamageNorm: 5.07 * e['*vengeance:damage'],
         ability: soulCarver
       })
       _.ApplyTicker(w, e, t, soulCarverTicker)
     }
   ] as ICastFunc[]
-})
+}
 const empowerWardsMod: IModifierTemplate = {
   id: 218256,
   slug: 'empower-wards',
@@ -465,7 +442,8 @@ const empowerWardsMod: IModifierTemplate = {
   duration: 6,
   durationIsHasted: false
 }
-const empowerWards: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
+const empowerWards = {
+  ...AbilityDefaults,
   slug: 'empower-wards',
   cooldown: 20,
   onGCD: false,
@@ -475,7 +453,7 @@ const empowerWards: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
       _.ApplyMod(w, e, e, empowerWardsMod)
     }
   ] as ICastFunc[]
-})
+}
 const increasedThreatPassive: IPassiveTemplate = {
   id: 218256,
   slug: 'empower-wards',

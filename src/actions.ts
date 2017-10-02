@@ -6,6 +6,7 @@ import { IWorld, formatTime } from './world'
 import { parse, build } from './templates/attributeParser'
 import report from './report'
 import { start, end } from './perf'
+import { IMetric } from './metric'
 
 const _debug = require('debug')
 let debug: any
@@ -21,6 +22,20 @@ if (process.env.VEIL_MODE !== 'PERF') {
 } else {
   verbose = function() {}
 }
+
+const TriggerGCD = (w: IWorld, e: IEntity): void => {
+  e['gcd:started'] = w.now
+  e['gcd:refreshes'] = w.now + e['gcd:time']
+}
+export { TriggerGCD }
+const IsOnGCD = (w: IWorld, e: IEntity): boolean => {
+  if (e['gcd:refreshes'] === undefined) {
+    return false
+  }
+  return e['gcd:refreshes'] > w.now
+}
+export { IsOnGCD }
+
 const SpawnEntity = (w: IWorld, e: IEntity): void => {
   e.key = Symbol(`[Entity:${e.slug}]`)
   w.entities.push(e)
@@ -240,6 +255,14 @@ const CastAbilityByName = (w: IWorld, e: IEntity, slug: string, ...targets: IEnt
   }
 }
 export { CastAbilityByName }
+const Kill = (e: IEntity, a: IAbilityTemplate): void => {
+  //start('action:kill')
+  e.alive = false
+  e.health = 0
+  report('ENTITY_DIED', { unit: e, killingBlow: a })
+  //end('action:kill')
+}
+export { Kill }
 const CastAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...targets: IEntity[]): boolean => {
   let a = i.template
   //start('onGCD')
@@ -275,7 +298,11 @@ export { CastAbilityByReference }
 const CastFreeAbilityByReference = (w: IWorld, e: IEntity, i: IAbilityInstance, ...targets: IEntity[]): boolean => {
   //start('action:CFABR')
   let a = i.template
-  report('ABILITY_CASTED', { entity: e, spell: i.template })
+  if (w._subscriptions.CAST !== undefined) {
+    w._subscriptions.CAST.forEach(h => {
+      h.f('CAST', { ability: i.template.slug })
+    })
+  }
   debug(`\t${formatTime(w.now)}\t${e.slug} casts ${a.slug}`)
   i.currentCharges = i.currentCharges - 1
   //start('action:CFABR:cooldown')
@@ -324,51 +351,49 @@ const CastFreeAbilityByTemplate = (w: IWorld, e: IEntity, tmpl: IAbilityTemplate
   //end('action:CastFreeAbilityByTemplate')
 }
 export { CastFreeAbilityByTemplate }
-const DealDamage = (w: IWorld, e: IEntity, t: IEntity, args: any): void => {
+interface IDamageArgs {
+  type?: string
+  mhDamageNorm?: number
+  ohDamageNorm?: number
+  attackPowerDamage?: number
+  critDisabled?: boolean
+  ability: IAbilityTemplate
+}
+interface IDamageResult {
+  timestamp: number
+  amount?: number
+  didCrit?: boolean
+  ability: IAbilityTemplate
+}
+const DealDamage = (w: IWorld, e: IEntity, t: IEntity, args: IDamageArgs): void => {
   //start('action:DealDamage')
-  let a: number = 0
-  switch (args.type) {
-    case 'PHYSICAL':
-    case 'FIRE':
-      let s: IEntity = args.source
-      if (args.mhDamageNorm !== undefined) {
-        a += s['mainHand:damage:normalized'] * args.mhDamageNorm * s['damage']
-      }
-      if (args.ohDamageNorm !== undefined) {
-        a += s['offHand:damage:normalized'] * args.ohDamageNorm * s['damage']
-      }
-      if (args.attackPower !== undefined) {
-        a += s['attackpower'] * args.attackPower
-      } /*
-      if (args.mhDamageRaw) {
-        a += args.mhDamageRaw * (s['+mainHand:damage:min'] + Math.random() * (s['+mainHand:damage:max'] - s['+mainHand:damage:min']))
-      }
-      if (args.ohDamageRaw) {
-        a += 0.5 * args.ohDamageRaw * (s['+offHand:damage:min'] + Math.random() * (s['+offHand:damage:max'] - s['+offHand:damage:min']))
-      }*/
-
-      break
-    default:
-      report('ERROR', {
-        type: 'NYI',
-        details: `dealDamage handling not yet implemented for type ${args.type}`
-      })
-      return
+  let res: IDamageResult = {
+    timestamp: w.now,
+    amount: 0,
+    didCrit: false,
+    ability: args.ability
+  }
+  if (args.mhDamageNorm !== undefined) {
+    res.amount += e['mainHand:damage:normalized'] * args.mhDamageNorm * e['damage']
+  }
+  if (args.ohDamageNorm !== undefined) {
+    res.amount += e['offHand:damage:normalized'] * args.ohDamageNorm * e['damage']
+  }
+  if (args.attackPowerDamage !== undefined) {
+    res.amount += e['attackpower'] * args.attackPowerDamage * e['damage']
   }
 
-  args.amount = a
   if (t[e.key] !== undefined && t[e.key]['*target:damage'] !== undefined) {
-    args.amount *= t[e.key]['*target:damage']
+    res.amount *= t[e.key]['*target:damage']
   }
   if (!args.critDisabled) {
-    let critChance = args.source['crit']
+    let critChance = e['crit']
     if (t[e.key] !== undefined && t[e.key]['+crit'] !== undefined) {
       critChance += t[e.key]['+crit']
     }
     if (Math.random() <= critChance) {
-      args.amount *= 2
-      args.didCrit = true
-      //verbose'spell did crit')
+      res.amount *= 2
+      res.didCrit = true
     }
   }
   let dr: number = t['*dr:all']
@@ -378,19 +403,20 @@ const DealDamage = (w: IWorld, e: IEntity, t: IEntity, args: any): void => {
   } else {
     dr *= t['*dr:magical']
   }
-  args.amount *= dr
-  args.amount = Math.round(args.amount)
+  res.amount *= dr
+  res.amount = Math.round(res.amount)
 
-  if (t.health > args.amount) {
-    t.health -= args.amount
-    ////debug(`damage done:\t${args.source.slug}\t${args.target.slug}\t${args.amount}\t${args.ability.slug}`)
-    report('DAMAGE_TAKEN', args)
+  if (t.health > res.amount) {
+    t.health -= res.amount
   } else {
     t.health = 0
-    ////debug(`unit died from:${args.source.slug}\t${args.target.slug}\t${args.amount}\t${args.ability.slug}`)
-    report('DAMAGE_TAKEN', args)
-    Kill(args.source, args.ability)
+    Kill(t, args.ability)
   }
+
+  if (w._subscriptions.DAMAGE_DONE !== undefined) {
+    w._subscriptions.DAMAGE_DONE.forEach(x => x.f('DAMAGE_DONE', res))
+  }
+
   //end('action:DealDamage')
 }
 export { DealDamage }
@@ -411,14 +437,7 @@ const DealHealing = (e: IEntity, t: IEntity, args: any): void => {
   report('HEALING_DONE', args)
 }
 export { DealHealing }
-const Kill = (e: IEntity, a: IAbilityTemplate): void => {
-  //start('action:kill')
-  e.alive = false
-  e.health = 0
-  report('ENTITY_DIED', { unit: e, killingBlow: a })
-  //end('action:kill')
-}
-export { Kill }
+
 const TeachAbility = (w: IWorld, e: IEntity, a: IAbilityTemplate): void => {
   let x: IAbilityInstance = {
     template: a,
@@ -664,19 +683,6 @@ const ApplyTicker = (w: IWorld, src: IEntity, tar: IEntity, t: ITickerTemplate):
 
 export { ApplyTicker }
 
-const TriggerGCD = (w: IWorld, e: IEntity): void => {
-  e['gcd:started'] = w.now
-  e['gcd:refreshes'] = w.now + e['gcd:time']
-}
-export { TriggerGCD }
-const IsOnGCD = (w: IWorld, e: IEntity): boolean => {
-  if (e['gcd:refreshes'] === undefined) {
-    return false
-  }
-  return e['gcd:refreshes'] > w.now
-}
-export { IsOnGCD }
-
 const DistanceBetweenUnits = (e1: IEntity, e2: IEntity): number => {
   let dx = e1.position.x - e2.position.x
   let dy = e1.position.y - e2.position.y
@@ -754,3 +760,38 @@ const UnselectTalent = (w: IWorld, e: IEntity, t: ITalentSlot): void => {
   t.enabled = false
 }
 export { UnselectTalent }
+
+const AttachMetric = (w: IWorld, m: IMetric): void => {
+  m.subscriptions.forEach(s => {
+    if (w._subscriptions[s.event] === undefined) {
+      w._subscriptions[s.event] = []
+    }
+    w._subscriptions[s.event].push({
+      filters: s.filters,
+      f: m.notify
+    })
+  })
+}
+export { AttachMetric }
+
+const StartCombat = (w: IWorld): void => {
+  if (w._subscriptions.COMBAT_START !== undefined) {
+    w._subscriptions.COMBAT_START.forEach(x =>
+      x.f('COMBAT_START', {
+        timestamp: w.now
+      })
+    )
+  }
+}
+export { StartCombat }
+
+const EndCombat = (w: IWorld): void => {
+  if (w._subscriptions.COMBAT_END !== undefined) {
+    w._subscriptions.COMBAT_END.forEach(x =>
+      x.f('COMBAT_END', {
+        timestamp: w.now
+      })
+    )
+  }
+}
+export { EndCombat }
