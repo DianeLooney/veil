@@ -27,6 +27,11 @@ let doDhRotation = function(w: IWorld, e: IEntity, t: IEntity) {
     //end(`cast:'empower-wards'`)
     return
   }
+  if (_.CastAbilityByName(w, e, 'fiery-brand', t)) {
+    //end('casts')
+    //end(`cast:'fiery-brand'`)
+    return
+  }
   //start(`cast:'infernal-strike'`)
   if (_.CastAbilityByName(w, e, 'infernal-strike', t)) {
     //end('casts')
@@ -64,7 +69,7 @@ let doDhRotation = function(w: IWorld, e: IEntity, t: IEntity) {
     return
   }
   //start(`cast:'spirit-bomb'`)
-  if (_.CastAbilityByName(w, e, 'spirit-bomb')) {
+  if (e['fragment:count'] >= 5 && _.CastAbilityByName(w, e, 'spirit-bomb')) {
     //end('casts')
     //end(`cast:'spirit-bomb'`)
     return
@@ -83,7 +88,6 @@ let doDhRotation = function(w: IWorld, e: IEntity, t: IEntity) {
   }
 }
 
-let perfMode = process.env.VEIL_MODE === 'PERF'
 switch (process.env.VEIL_MODE) {
   case 'PERF':
     {
@@ -109,71 +113,7 @@ switch (process.env.VEIL_MODE) {
           start('tick')
           _.TickWorld(w)
           end('tick')
-
-          if (!_.IsOnGCD(w, e)) {
-            start('casts')
-
-            //start(`cast:'empower-wards'`)
-            if (_.CastAbilityByName(w, e, 'empower-wards')) {
-              end('casts')
-              //end(`cast:'empower-wards'`)
-              continue
-            }
-            //start(`cast:'infernal-strike'`)
-            if (_.CastAbilityByName(w, e, 'infernal-strike', idiot)) {
-              end('casts')
-              //end(`cast:'infernal-strike'`)
-              continue
-            }
-            //start(`cast:'metamorphosis'`)
-            if (_.CastAbilityByName(w, e, 'metamorphosis', idiot)) {
-              end('casts')
-              //end(`cast:'metamorphosis'`)
-              continue
-            }
-            //start(`cast:'demon-spikes'`)
-            if (_.CastAbilityByName(w, e, 'demon-spikes')) {
-              end('casts')
-              //end(`cast:'demon-spikes'`)
-              continue
-            }
-            //start(`cast:'soul-carver'`)
-            if (_.CastAbilityByName(w, e, 'soul-carver', idiot)) {
-              end('casts')
-              //end(`cast:'soul-carver'`)
-              continue
-            }
-            //start(`cast:'sigil-of-flame'`)
-            if (_.CastAbilityByName(w, e, 'sigil-of-flame', idiot)) {
-              end('casts')
-              //end(`cast:'sigil-of-flame'`)
-              continue
-            }
-            //start(`cast:'immolation-aura'`)
-            if (_.CastAbilityByName(w, e, 'immolation-aura')) {
-              end('casts')
-              //end(`cast:'immolation-aura'`)
-              continue
-            }
-            //start(`cast:'spirit-bomb'`)
-            if (_.CastAbilityByName(w, e, 'spirit-bomb')) {
-              end('casts')
-              //end(`cast:'spirit-bomb'`)
-              continue
-            }
-            //start(`cast:'fracture'`)
-            if (_.CastAbilityByName(w, e, 'fracture', idiot)) {
-              end('casts')
-              //end(`cast:'fracture'`)
-              continue
-            }
-            //start(`cast:'shear'`)
-            if (_.CastAbilityByName(w, e, 'shear', idiot)) {
-              end('casts')
-              //end(`cast:'shear'`)
-              continue
-            }
-          }
+          doDhRotation(w, e, idiot)
         }
         //end('ticking')
         if (run % 10 === 0) {
@@ -232,9 +172,7 @@ switch (process.env.VEIL_MODE) {
       _.InitEntity(w, idiot)
       _.SpawnEntity(w, e)
       _.SpawnEntity(w, idiot)
-      //end('spawning')
       let first = true
-      //start('ticking')
       let t = 200 * w._second / w._tickDelta
       _.StartCombat(w)
       for (let i = 0; i < t; i++) {

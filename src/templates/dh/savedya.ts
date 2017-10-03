@@ -14,6 +14,8 @@ function newSavedya() {
     items.forEach(item => {
       _.EquipItem(w, e, item.slot, item)
     })
+    _.LearnTalent(w, e, 3, 1) //Fracture
+    _.LearnTalent(w, e, 5, 2) //Spirit Bomb
   })
   return savedya
 }

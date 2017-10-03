@@ -10,7 +10,6 @@ import { sequence, rppm } from '../../rng'
 import report from '../../report'
 const _debug = require('debug')
 import { start, end } from '../../perf'
-
 import * as talents from './vengeance-talents'
 
 const debug = _debug('vengeance')
@@ -51,8 +50,6 @@ const infernalStrike: IAbilityTemplate = {
           }
           _.EnemiesTouchingRadius(w, pos, 6).forEach(tar => {
             _.DealDamage(w, e, tar, {
-              source: e,
-              target: t,
               type: 'FIRE',
               attackPowerDamage: 3.16 * e['*vengeance:damage'],
               ability: infernalStrike
@@ -599,8 +596,9 @@ const enchantsPassive: IPassiveTemplate = {
     '+crit:rating': 400
   }
 }
-const DefaultVengeance = function() {
-  let x = Object.assign(DefaultPlayerEntity(), {
+const DefaultVengeance = (): IEntity => {
+  let x: IEntity = {
+    ...DefaultPlayerEntity(),
     onInit: [
       function(w: IWorld, e: IEntity) {
         attachVengeanceAttributes(e)
@@ -661,12 +659,12 @@ const DefaultVengeance = function() {
       }
     ],
     onSpawn: [(w: IWorld, e: IEntity) => {}]
-  })
+  }
   x._talents = []
   for (let k in talents) {
     x._talents.push(talents[k])
   }
-  return x as IEntity
+  return x
 }
 
 export default DefaultVengeance

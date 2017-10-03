@@ -62,7 +62,8 @@ export const burningAlive: ITalentSlot = Object.assign({}, DefaultTalentSlot, {
 })
 
 // Tier 3
-export const flameCrash: ITalentSlot = Object.assign({}, DefaultTalentSlot, {
+export const flameCrash: ITalentSlot = {
+  ...DefaultTalentSlot,
   slug: 'flame-crash',
   row: 1,
   column: 2,
@@ -70,9 +71,11 @@ export const flameCrash: ITalentSlot = Object.assign({}, DefaultTalentSlot, {
   passives: [],
   actives: [],
   attributes: { ability: { 'infernal-strike': { '+crash-enabled': 1 } } }
-})
+}
 
-const fractureAbility = Object.assign({}, AbilityDefaults, {
+// Tier 4
+const fractureAbility: IAbilityTemplate = {
+  ...AbilityDefaults,
   id: 209795,
   slug: 'fracture',
   cost: {
@@ -88,9 +91,10 @@ const fractureAbility = Object.assign({}, AbilityDefaults, {
         }
       })
     }
-  ] as ICastFunc[]
-})
-const fractureMainHand: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
+  ]
+}
+const fractureMainHand: IAbilityTemplate = {
+  ...AbilityDefaults,
   id: 225919,
   slug: 'fracture-mh',
   onGCD: false,
@@ -98,17 +102,16 @@ const fractureMainHand: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   onCast: [
     (w: IWorld, e: IEntity, i: IAbilityInstance, t: IEntity) => {
       _.DealDamage(w, e, t, {
-        source: e,
-        target: t,
         type: 'PHYSICAL',
         mhDamageNorm: 4.51 * e['*vengeance:damage'] * e['damage:physical'],
         ability: fractureMainHand
       })
       spawnFragment(w, e, false)
     }
-  ] as ICastFunc[]
-})
-const fractureOffHand: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
+  ]
+}
+const fractureOffHand: IAbilityTemplate = {
+  ...AbilityDefaults,
   id: 225921,
   slug: 'fracture-oh',
   onGCD: false,
@@ -116,28 +119,29 @@ const fractureOffHand: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   onCast: [
     (w: IWorld, e: IEntity, i: IAbilityInstance, t: IEntity) => {
       _.DealDamage(w, e, t, {
-        source: e,
-        target: t,
         type: 'PHYSICAL',
         ohDamageNorm: 8.97 * e['*vengeance:damage'] * e['damage:physical'],
         ability: fractureOffHand
       })
       spawnFragment(w, e, false)
     }
-  ] as ICastFunc[]
-})
-export const fracture: ITalentSlot = Object.assign({}, DefaultTalentSlot, {
+  ]
+}
+export const fracture: ITalentSlot = {
+  ...DefaultTalentSlot,
   slug: 'fracture',
-  row: 2,
+  row: 3,
   column: 1,
   enabled: false,
   passives: [],
   actives: [fractureAbility],
   attributes: {}
-})
+}
 
-// Tier 4
-export const concentratedSigils = Object.assign({}, DefaultTalentSlot, {
+// Tier 5
+
+export const concentratedSigils = {
+  ...DefaultTalentSlot,
   slug: 'concentrated-sigils',
   row: 1,
   column: 0,
@@ -145,9 +149,9 @@ export const concentratedSigils = Object.assign({}, DefaultTalentSlot, {
   passives: [],
   actives: [],
   attributes: { ability: { 'sigil-of-flame': { '+selfcast-enabled': 1 } } }
-})
+}
 
-// Tier 5
+// Tier 6
 
 const spiritBombAbility: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
   slug: 'spirit-bomb',
@@ -155,7 +159,7 @@ const spiritBombAbility: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
     ['fragment:count']: 1
   },
   onCast: [
-    (w: IWorld, e: IEntity, i: IAbilityInstance) => {
+    (w: IWorld, e: IEntity, i: IAbilityInstance): void => {
       let x = e['fragment:count']
       consumeFragment(w, e, x)
       debug('casting spirit bomb')
@@ -165,10 +169,8 @@ const spiritBombAbility: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
           //TODO: target units in range of the caster intsead of his target
           _.EnemiesTouchingRadius(w, e.position, 8).forEach(tar => {
             _.DealDamage(w, e, tar, {
-              source: e,
-              target: tar,
               type: 'FIRE',
-              attackPower: 1.8 * x * e['damage:fire'],
+              attackPowerDamage: 1.8 * x * e['damage:fire'],
               ability: spiritBombAbility
             })
           })
@@ -177,14 +179,15 @@ const spiritBombAbility: IAbilityTemplate = Object.assign({}, AbilityDefaults, {
         }
       })
     }
-  ] as ICastFunc[]
+  ]
 })
-export const spiritBomb = Object.assign({}, DefaultTalentSlot, {
+export const spiritBomb = {
+  ...DefaultTalentSlot,
   slug: 'spirit-bomb',
-  row: 1,
+  row: 5,
   column: 2,
   enabled: false,
   passives: [],
   actives: [spiritBombAbility],
   attributes: {}
-})
+}

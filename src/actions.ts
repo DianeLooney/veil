@@ -36,6 +36,27 @@ const IsOnGCD = (w: IWorld, e: IEntity): boolean => {
 }
 export { IsOnGCD }
 
+const LearnTalent = (w: IWorld, e: IEntity, row: number, col: number): void => {
+  let t = e.talentsByRow[row][col]
+  t.actives.forEach(x => TeachAbility(w, e, x))
+  for (let a in t.attributes) {
+    GainAttribute(e, a, t.attributes[a])
+  }
+  t.passives.forEach(x => TeachPassive(w, e, x))
+}
+export { LearnTalent }
+const UnlearnTalent = (w: IWorld, e: IEntity, row: number, col: number): void => {
+  let t = e.talentsByRow[row][col]
+  t.actives.forEach(x => {
+    UnteachAbility(w, e, e.abilities[x.slug])
+  })
+  for (let a in t.attributes) {
+    LoseAttribute(e, a, t.attributes[a])
+  }
+  t.passives.forEach(x => UnteachPassive(w, e, x))
+}
+export { UnlearnTalent }
+
 const SpawnEntity = (w: IWorld, e: IEntity): void => {
   e.key = Symbol(`[Entity:${e.slug}]`)
   w.entities.push(e)

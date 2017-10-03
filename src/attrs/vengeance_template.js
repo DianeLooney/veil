@@ -7,7 +7,9 @@ module.exports = Object.assign(playerAttributes, {
     return e['pain:max:base'] + e['+pain:max']
   },
   ['fragment:expiration:time']: [],
-  ['fragment:count']: 0,
+  ['fragment:count']: function(e) {
+    return e['fragment:expiration:time'].length
+  },
   ['*vengeance:damage']: 0.95,
   ['+shear:damage']: 0.12,
 
